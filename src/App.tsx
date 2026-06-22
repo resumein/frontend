@@ -18,7 +18,7 @@ function App() {
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
         <Route element={<ProtectedRoute />}>
-            <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

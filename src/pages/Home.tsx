@@ -1,8 +1,9 @@
 import Navbar from '../components/Navbar';
 
 export default function HomePage() {
+  const CLIENT_ID = import.meta.env.VITE_CLIENT_ID || "Ov23liNS8d2pIPvcG6pO";
   const handleLogin = () => {
-    window.location.href = `https://github.com/login/oauth/authorize?client_id=Ov23liNS8d2pIPvcG6pO&scope=read:user user:email`;
+    window.location.href = `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&scope=read:user user:email`;
   };
 
   return (
