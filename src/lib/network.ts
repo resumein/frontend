@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useUserStore } from "../store/userStore";
 
-const host = "http://localhost:7071";
+const host = import.meta.env.VITE_API_URL || "https://resumein.azurewebsites.net/"
 
 export const BaseAPI = axios.create({
     baseURL: host,
