@@ -1,4 +1,4 @@
-import { BaseAPI, API } from './network';
+import { BaseAPI } from './network';
 
 export interface User {
   name: string;
