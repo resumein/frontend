@@ -1,64 +1,98 @@
-import { useNavigate } from 'react-router-dom';
-import { useUserStore } from '../store/userStore'; // Adjust path based on your folder structure
+import { useState } from 'react';
+import { useUserStore } from '../store/userStore';
+import Navbar from '../components/Navbar';
+import Sidebar from '../components/Sidebar';
 
 export default function DashboardPage() {
-    const navigate = useNavigate();
+  const user = useUserStore((state) => state.user);
+  const [activeTab, setActiveTab] = useState<string>('education');
+  
+  // Initially collapsed (floating buttons only, no preselected highlights)
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
 
-    // 1. Extract exactly what you need from the store
-    const user = useUserStore((state) => state.user);
-    const clearAuth = useUserStore((state) => state.clearAuth);
-
-    // 2. Handle the logout flow
-    const handleLogout = () => {
-        clearAuth();      // This wipes the token and user from memory AND localStorage instantly
-        navigate('/');    // Send them back to the public homepage
-    };
-
-    // 3. TypeScript safety check
-    // Even though your <ProtectedRoute /> ensures they have a token to get here,
-    // TypeScript still knows `user` could theoretically be null based on your interface.
-    if (!user) {
-        return <div style={{ textAlign: 'center', marginTop: '50px' }}>Loading user data...</div>;
-    }
-
-    // 4. Render the UI
+  if (!user) {
     return (
-        <main style={{ padding: '2rem', maxWidth: '600px', margin: '40px auto', fontFamily: 'sans-serif' }}>
-            <h1>Dashboard</h1>
-            
-            <section style={{ 
-                border: '1px solid #e5e7eb', 
-                padding: '1.5rem', 
-                borderRadius: '8px',
-                marginTop: '1.5rem',
-                backgroundColor: '#f9fafb'
-            }}>
-                <h2 style={{ marginTop: 0 }}>Welcome back, {user.name}!</h2>
-                
-                <div style={{ marginTop: '1rem', lineHeight: '1.6' }}>
-                    <p style={{ margin: 0 }}>
-                        <strong>Username:</strong> @{user.username}
-                    </p>
-                    <p style={{ margin: 0 }}>
-                        <strong>Email:</strong> {user.email}
-                    </p>
-                </div>
-            </section>
-
-            <button 
-                onClick={handleLogout}
-                style={{ 
-                    marginTop: '2rem', 
-                    padding: '0.5rem 1rem', 
-                    backgroundColor: '#ef4444', 
-                    color: 'white', 
-                    border: 'none', 
-                    borderRadius: '4px',
-                    cursor: 'pointer'
-                }}
-            >
-                Log Out
-            </button>
-        </main>
+      <div style={{ 
+        textAlign: 'center', 
+        padding: '3rem', 
+        color: 'var(--text-secondary)',
+        backgroundColor: 'var(--bg-primary)',
+        minHeight: '100vh'
+      }}>
+        Loading user session...
+      </div>
     );
+  }
+
+  // Canva-style click handler for slim sidebar tabs
+  const handleTabChange = (tabId: string) => {
+    if (sidebarOpen && activeTab === tabId) {
+      // Toggle closed if clicking the active tab again
+      setSidebarOpen(false);
+    } else {
+      // Open and switch tab
+      setSidebarOpen(true);
+      setActiveTab(tabId);
+    }
+  };
+
+  // Format tab ID to a friendly header label
+  const getTabLabel = (id: string) => {
+    return id.charAt(0).toUpperCase() + id.slice(1);
+  };
+
+  return (
+    <div className="dashboard-container">
+      <Navbar />
+      <div className="dashboard-body">
+        
+        {/* Parent container wrapping both the slim tab bar and expanded panel */}
+        <div className={`editor-sidebar-container ${sidebarOpen ? '' : 'collapsed'}`}>
+          {/* Leftmost: Slim tab bar (floats when container is collapsed) */}
+          <Sidebar 
+            activeTab={activeTab} 
+            sidebarOpen={sidebarOpen} 
+            onTabChange={handleTabChange} 
+          />
+          
+          {/* Middle: Expanded sidebar panel */}
+          <div className={`editor-expanded-panel ${sidebarOpen ? '' : 'collapsed'}`}>
+            <div className="panel-inner-content" key={activeTab}>
+              <h2 style={{ 
+                fontSize: '1.15rem', 
+                fontWeight: 700, 
+                color: 'var(--text-primary)', 
+                marginBottom: '1rem',
+                letterSpacing: '-0.02em'
+              }}>
+                {getTabLabel(activeTab)}
+              </h2>
+              
+              {/* Workspace is kept empty for now, per design layout requirements */}
+            </div>
+
+            {/* Absolute circular button sitting on the panel border */}
+            <button 
+              className="sidebar-toggle-btn"
+              onClick={() => setSidebarOpen(false)}
+              title="Collapse sidebar"
+              aria-label="Collapse sidebar"
+            >
+              {/* Left arrow icon */}
+              <svg viewBox="0 0 24 24">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Rightmost: Main Workspace (Canvas area) */}
+        <main className="dashboard-main">
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}>
+            Resume Workspace / Live Preview
+          </p>
+        </main>
+      </div>
+    </div>
+  );
 }
