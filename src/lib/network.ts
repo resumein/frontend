@@ -24,3 +24,15 @@ API.interceptors.request.use((config) => {// Update global state AND save to bro
 export const getWithToken = async (url: string) => {
     return await API.get(url);
 };
+
+export const postWithToken = async (url: string, data: any) => {
+    return await API.post(url, data);
+};
+
+export const deleteWithToken = async (url: string, config?: any) => {
+    return await API.delete(url, config);
+};
+
+export const putWithToken = async (url: string, data: any) => {
+    return await API.put(url, data);
+};
