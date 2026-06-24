@@ -1,29 +1,57 @@
 import { useState, useEffect } from 'react';
 import { useUserStore } from '../store/userStore';
+import { useItemStore } from '../store/itemStore';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import { itemService } from '../lib/api';
-import type { 
-  ResumeItem, 
-  EducationItem, 
-  ProjectItem, 
-  ExperienceItem, 
-  CertificationItem, 
-  AwardItem 
+import type {
+  ResumeItem,
+  EducationItem,
+  ProjectItem,
+  ExperienceItem,
+  CertificationItem,
+  AwardItem
 } from '../lib/api';
+
+interface Toast {
+  id: string;
+  message: string;
+  type: 'success' | 'error' | 'info';
+}
 
 export default function DashboardPage() {
   const user = useUserStore((state) => state.user);
   const [activeTab, setActiveTab] = useState<string>('education');
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
-  
-  // Resume items state
-  const [items, setItems] = useState<ResumeItem[]>([]);
-  const [loadingItems, setLoadingItems] = useState<boolean>(false);
-  const [submitting, setSubmitting] = useState<boolean>(false);
-  
-  // Controls dialog modal visibility
+
+  // Zustand items store state
+  const items = useItemStore((state) => state.items);
+  const setItems = useItemStore((state) => state.setItems);
+  const addItem = useItemStore((state) => state.addItem);
+  const removeItem = useItemStore((state) => state.removeItem);
+  const updateItem = useItemStore((state) => state.updateItem);
+  const loadingItems = useItemStore((state) => state.loading);
+  const setLoadingItems = useItemStore((state) => state.setLoading);
+
+  // Local state for modals and forms
   const [isAdding, setIsAdding] = useState<boolean>(false);
+  const [itemToEdit, setItemToEdit] = useState<ResumeItem | null>(null);
+  const [submitting, setSubmitting] = useState<boolean>(false);
+
+  // State for delete confirmation modal
+  const [itemToDelete, setItemToDelete] = useState<ResumeItem | null>(null);
+  const [deleting, setDeleting] = useState<boolean>(false);
+
+  // Toast notifications state
+  const [toasts, setToasts] = useState<Toast[]>([]);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3000);
+  };
 
   // Fetch items on user login / mount
   useEffect(() => {
@@ -35,29 +63,39 @@ export default function DashboardPage() {
         })
         .catch((err) => {
           console.error("Failed to load user items:", err);
+          showToast("Failed to load your resume items.", "error");
         })
         .finally(() => {
           setLoadingItems(false);
         });
     }
-  }, [user]);
+  }, [user, setItems, setLoadingItems]);
 
-  // Escape key event listener to close modal dialog
+  const handleCloseForm = () => {
+    setIsAdding(false);
+    setItemToEdit(null);
+  };
+
+  // Escape key event listener to close modal dialogs
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isAdding) {
-        setIsAdding(false);
+      if (e.key === 'Escape') {
+        if (isAdding) {
+          handleCloseForm();
+        } else if (itemToDelete) {
+          setItemToDelete(null);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isAdding]);
+  }, [isAdding, itemToDelete]);
 
   if (!user) {
     return (
-      <div style={{ 
-        textAlign: 'center', 
-        padding: '3rem', 
+      <div style={{
+        textAlign: 'center',
+        padding: '3rem',
         color: 'var(--text-secondary)',
         backgroundColor: 'var(--bg-primary)',
         minHeight: '100vh'
@@ -69,7 +107,7 @@ export default function DashboardPage() {
 
   // Canva-style click handler for slim sidebar tabs
   const handleTabChange = (tabId: string) => {
-    setIsAdding(false); // Reset form modal on tab switch
+    handleCloseForm(); // Reset form modal on tab switch
     if (sidebarOpen && activeTab === tabId) {
       setSidebarOpen(false);
     } else {
@@ -102,6 +140,17 @@ export default function DashboardPage() {
     }
   };
 
+  // Format ISO date string into input tag value format (YYYY-MM-DD)
+  const formatDateForInput = (dateStr?: string) => {
+    if (!dateStr) return '';
+    try {
+      const date = new Date(dateStr);
+      return date.toISOString().split('T')[0];
+    } catch (e) {
+      return '';
+    }
+  };
+
   // Filter items matching active category tab
   const activeItems = items.filter(item => {
     if (activeTab === 'projects') {
@@ -116,35 +165,35 @@ export default function DashboardPage() {
     return item.type === activeTab;
   });
 
-  // Form submission handler
+  // Form submission handler (Creates or Updates an item)
   const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
     const formData = new FormData(form);
-    
+
     try {
       setSubmitting(true);
-      
+
       // Map activeTab to payload type ('projects' -> 'project', etc.)
       let payload: any = {
-        type: activeTab === 'projects' ? 'project' : 
-              activeTab === 'certifications' ? 'certification' : 
-              activeTab === 'awards' ? 'award' : activeTab
+        type: activeTab === 'projects' ? 'project' :
+          activeTab === 'certifications' ? 'certification' :
+            activeTab === 'awards' ? 'award' : activeTab
       };
 
       if (activeTab === 'education') {
         payload.school = formData.get('school') as string;
         payload.degree = formData.get('degree') as string;
         payload.field = formData.get('field') as string;
-        
+
         const fromVal = formData.get('fromDate') as string;
         payload.fromDate = fromVal ? new Date(fromVal).toISOString() : '';
-        
+
         const toVal = formData.get('toDate') as string;
         if (toVal) {
           payload.toDate = new Date(toVal).toISOString();
         }
-        
+
         const gradeVal = formData.get('grade') as string;
         if (gradeVal) {
           payload.grade = gradeVal;
@@ -152,17 +201,17 @@ export default function DashboardPage() {
       } else if (activeTab === 'projects') {
         payload.name = formData.get('name') as string;
         payload.github = formData.get('github') as string;
-        
+
         const urlVal = formData.get('url') as string;
         if (urlVal) {
           payload.url = urlVal;
         }
-        
+
         payload.description = formData.get('description') as string;
-        
+
         const fromVal = formData.get('fromDate') as string;
         payload.fromDate = fromVal ? new Date(fromVal).toISOString() : '';
-        
+
         const toVal = formData.get('toDate') as string;
         if (toVal) {
           payload.toDate = new Date(toVal).toISOString();
@@ -170,15 +219,15 @@ export default function DashboardPage() {
       } else if (activeTab === 'experience') {
         payload.title = formData.get('title') as string;
         payload.company = formData.get('company') as string;
-        
+
         const fromVal = formData.get('fromDate') as string;
         payload.fromDate = fromVal ? new Date(fromVal).toISOString() : '';
-        
+
         const toVal = formData.get('toDate') as string;
         if (toVal) {
           payload.toDate = new Date(toVal).toISOString();
         }
-        
+
         const descVal = formData.get('description') as string;
         if (descVal) {
           payload.description = descVal;
@@ -187,17 +236,17 @@ export default function DashboardPage() {
       } else if (activeTab === 'certifications') {
         payload.title = formData.get('title') as string;
         payload.platform = formData.get('platform') as string;
-        
+
         const urlVal = formData.get('url') as string;
         if (urlVal) {
           payload.url = urlVal;
         }
-        
+
         const descVal = formData.get('description') as string;
         if (descVal) {
           payload.description = descVal;
         }
-        
+
         const completedVal = formData.get('completedOn') as string;
         if (completedVal) {
           payload.completedOn = new Date(completedVal).toISOString();
@@ -207,12 +256,12 @@ export default function DashboardPage() {
         payload.title = formData.get('title') as string;
         payload.issuer = formData.get('issuer') as string;
         payload.awardType = formData.get('awardType') as string;
-        
+
         const descVal = formData.get('description') as string;
         if (descVal) {
           payload.description = descVal;
         }
-        
+
         const dateVal = formData.get('date') as string;
         if (dateVal) {
           payload.date = new Date(dateVal).toISOString();
@@ -220,15 +269,42 @@ export default function DashboardPage() {
         payload.role = [];
       }
 
-      const created = await itemService.createItem(payload);
-      setItems(prev => [created, ...prev]);
-      setIsAdding(false);
+      let result;
+      if (itemToEdit && itemToEdit.id) {
+        result = await itemService.updateItem(itemToEdit.id, payload);
+        updateItem(result);
+        showToast('Item updated successfully.', 'success');
+      } else {
+        result = await itemService.createItem(payload);
+        addItem(result);
+        showToast('Item added successfully.', 'success');
+      }
+
+      handleCloseForm();
       form.reset();
     } catch (err) {
-      console.error("Failed to create item:", err);
-      alert("Failed to save item. Please verify your fields and date entries.");
+      console.error("Failed to save item:", err);
+      showToast('Failed to save item. Please verify all entries.', 'error');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // Confirm and delete transaction handler
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete || !itemToDelete.id) return;
+
+    try {
+      setDeleting(true);
+      await itemService.deleteItem(itemToDelete.id);
+      removeItem(itemToDelete.id);
+      setItemToDelete(null);
+      showToast('Item deleted successfully.', 'success');
+    } catch (err) {
+      console.error("Failed to delete item:", err);
+      showToast('Failed to delete item. Please try again.', 'error');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -236,25 +312,31 @@ export default function DashboardPage() {
     <div className="dashboard-container">
       <Navbar />
       <div className="dashboard-body">
-        
+
         {/* Parent container wrapping both the slim tab bar and expanded panel */}
         <div className={`editor-sidebar-container ${sidebarOpen ? '' : 'collapsed'}`}>
           {/* Leftmost: Slim tab bar (floats when container is collapsed) */}
-          <Sidebar 
-            activeTab={activeTab} 
-            sidebarOpen={sidebarOpen} 
-            onTabChange={handleTabChange} 
+          <Sidebar
+            activeTab={activeTab}
+            sidebarOpen={sidebarOpen}
+            onTabChange={handleTabChange}
           />
-          
+
           {/* Middle: Expanded sidebar panel */}
           <div className={`editor-expanded-panel ${sidebarOpen ? '' : 'collapsed'}`}>
             <div className="panel-inner-content" key={activeTab}>
-              
+
               <div className="panel-header-row">
                 <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
                   {getTabLabel(activeTab)}
                 </h2>
-                <button className="btn-add-item" onClick={() => setIsAdding(true)}>
+                <button
+                  className="btn-add-item"
+                  onClick={() => {
+                    setItemToEdit(null);
+                    setIsAdding(true);
+                  }}
+                >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="12" y1="5" x2="12" y2="19"></line>
                     <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -282,6 +364,42 @@ export default function DashboardPage() {
                 <div className="items-list">
                   {activeItems.map((item) => (
                     <div key={item.id} className="item-card">
+
+                      {/* Action buttons wrapper (visible bottom-right on hover) */}
+                      <div className="item-card-actions">
+                        <button
+                          className="item-card-btn edit"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setItemToEdit(item);
+                            setIsAdding(true);
+                          }}
+                          title="Edit item"
+                          aria-label="Edit item"
+                        >
+                          <svg viewBox="0 0 24 24">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5Z"></path>
+                          </svg>
+                        </button>
+                        <button
+                          className="item-card-btn delete"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setItemToDelete(item);
+                          }}
+                          title="Delete item"
+                          aria-label="Delete item"
+                        >
+                          <svg viewBox="0 0 24 24">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                          </svg>
+                        </button>
+                      </div>
+
                       {item.type === 'education' && (
                         <>
                           <div className="item-card-title">{(item as EducationItem).school}</div>
@@ -420,7 +538,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Absolute circular button sitting on the panel border */}
-            <button 
+            <button
               className="sidebar-toggle-btn"
               onClick={() => setSidebarOpen(false)}
               title="Collapse sidebar"
@@ -442,13 +560,15 @@ export default function DashboardPage() {
         </main>
       </div>
 
-      {/* Creation Modal Overlay Dialog */}
+      {/* Creation/Edit Modal Overlay Dialog */}
       {isAdding && (
-        <div className="modal-overlay" onClick={() => setIsAdding(false)}>
+        <div className="modal-overlay" onClick={handleCloseForm}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 className="modal-title">Add New {getModalTitleLabel(activeTab)}</h3>
-              <button className="btn-modal-close" onClick={() => setIsAdding(false)} title="Close dialog">
+              <h3 className="modal-title">
+                {itemToEdit ? 'Edit' : 'Add New'} {getModalTitleLabel(activeTab)}
+              </h3>
+              <button className="btn-modal-close" onClick={handleCloseForm} title="Close dialog">
                 <svg viewBox="0 0 24 24">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -461,19 +581,50 @@ export default function DashboardPage() {
                   <>
                     <div className="form-group">
                       <label className="form-label" htmlFor="school">School / Institution *</label>
-                      <input className="form-input" type="text" id="school" name="school" required placeholder="e.g. Stanford University" />
+                      <input
+                        className="form-input"
+                        type="text"
+                        id="school"
+                        name="school"
+                        required
+                        placeholder="e.g. Stanford University"
+                        defaultValue={itemToEdit ? (itemToEdit as EducationItem).school : ''}
+                      />
                     </div>
                     <div className="form-group">
                       <label className="form-label" htmlFor="degree">Degree *</label>
-                      <input className="form-input" type="text" id="degree" name="degree" required placeholder="e.g. Bachelor of Science" />
+                      <input
+                        className="form-input"
+                        type="text"
+                        id="degree"
+                        name="degree"
+                        required
+                        placeholder="e.g. Bachelor of Science"
+                        defaultValue={itemToEdit ? (itemToEdit as EducationItem).degree : ''}
+                      />
                     </div>
                     <div className="form-group">
                       <label className="form-label" htmlFor="field">Field of Study *</label>
-                      <input className="form-input" type="text" id="field" name="field" required placeholder="e.g. Computer Science" />
+                      <input
+                        className="form-input"
+                        type="text"
+                        id="field"
+                        name="field"
+                        required
+                        placeholder="e.g. Computer Science"
+                        defaultValue={itemToEdit ? (itemToEdit as EducationItem).field : ''}
+                      />
                     </div>
                     <div className="form-group">
                       <label className="form-label" htmlFor="grade">Grade / GPA (Optional)</label>
-                      <input className="form-input" type="text" id="grade" name="grade" placeholder="e.g. 3.9 / 4.0 or First Class" />
+                      <input
+                        className="form-input"
+                        type="text"
+                        id="grade"
+                        name="grade"
+                        placeholder="e.g. 3.9 / 4.0 or First Class"
+                        defaultValue={itemToEdit ? ((itemToEdit as EducationItem).grade || '') : ''}
+                      />
                     </div>
                   </>
                 )}
@@ -482,19 +633,49 @@ export default function DashboardPage() {
                   <>
                     <div className="form-group">
                       <label className="form-label" htmlFor="name">Project Name *</label>
-                      <input className="form-input" type="text" id="name" name="name" required placeholder="e.g. Resume Builder Web App" />
+                      <input
+                        className="form-input"
+                        type="text"
+                        id="name"
+                        name="name"
+                        required
+                        placeholder="e.g. Resume Builder Web App"
+                        defaultValue={itemToEdit ? (itemToEdit as ProjectItem).name : ''}
+                      />
                     </div>
                     <div className="form-group">
                       <label className="form-label" htmlFor="github">GitHub Repository URL *</label>
-                      <input className="form-input" type="url" id="github" name="github" required placeholder="https://github.com/username/project" />
+                      <input
+                        className="form-input"
+                        type="url"
+                        id="github"
+                        name="github"
+                        required
+                        placeholder="https://github.com/username/project"
+                        defaultValue={itemToEdit ? (itemToEdit as ProjectItem).github : ''}
+                      />
                     </div>
                     <div className="form-group">
                       <label className="form-label" htmlFor="url">Live Project URL (Optional)</label>
-                      <input className="form-input" type="url" id="url" name="url" placeholder="https://myproject.com" />
+                      <input
+                        className="form-input"
+                        type="url"
+                        id="url"
+                        name="url"
+                        placeholder="https://myproject.com"
+                        defaultValue={itemToEdit ? ((itemToEdit as ProjectItem).url || '') : ''}
+                      />
                     </div>
                     <div className="form-group">
                       <label className="form-label" htmlFor="description">Description *</label>
-                      <textarea className="form-textarea" id="description" name="description" required placeholder="Describe key features, technologies used, and your individual contribution..." />
+                      <textarea
+                        className="form-textarea"
+                        id="description"
+                        name="description"
+                        required
+                        placeholder="Describe key features, technologies used, and your individual contribution..."
+                        defaultValue={itemToEdit ? (itemToEdit as ProjectItem).description : ''}
+                      />
                     </div>
                   </>
                 )}
@@ -503,15 +684,37 @@ export default function DashboardPage() {
                   <>
                     <div className="form-group">
                       <label className="form-label" htmlFor="title">Job Title *</label>
-                      <input className="form-input" type="text" id="title" name="title" required placeholder="e.g. Software Engineer" />
+                      <input
+                        className="form-input"
+                        type="text"
+                        id="title"
+                        name="title"
+                        required
+                        placeholder="e.g. Software Engineer"
+                        defaultValue={itemToEdit ? (itemToEdit as ExperienceItem).title : ''}
+                      />
                     </div>
                     <div className="form-group">
                       <label className="form-label" htmlFor="company">Company / Organization *</label>
-                      <input className="form-input" type="text" id="company" name="company" required placeholder="e.g. Google" />
+                      <input
+                        className="form-input"
+                        type="text"
+                        id="company"
+                        name="company"
+                        required
+                        placeholder="e.g. Google"
+                        defaultValue={itemToEdit ? (itemToEdit as ExperienceItem).company : ''}
+                      />
                     </div>
                     <div className="form-group">
                       <label className="form-label" htmlFor="description">Description (Optional)</label>
-                      <textarea className="form-textarea" id="description" name="description" placeholder="Summarize your tasks, achievements, and technology stack..." />
+                      <textarea
+                        className="form-textarea"
+                        id="description"
+                        name="description"
+                        placeholder="Summarize your tasks, achievements, and technology stack..."
+                        defaultValue={itemToEdit ? ((itemToEdit as ExperienceItem).description || '') : ''}
+                      />
                     </div>
                   </>
                 )}
@@ -520,19 +723,48 @@ export default function DashboardPage() {
                   <>
                     <div className="form-group">
                       <label className="form-label" htmlFor="title">Certification Name *</label>
-                      <input className="form-input" type="text" id="title" name="title" required placeholder="e.g. AWS Certified Solutions Architect" />
+                      <input
+                        className="form-input"
+                        type="text"
+                        id="title"
+                        name="title"
+                        required
+                        placeholder="e.g. AWS Certified Solutions Architect"
+                        defaultValue={itemToEdit ? (itemToEdit as CertificationItem).title : ''}
+                      />
                     </div>
                     <div className="form-group">
                       <label className="form-label" htmlFor="platform">Platform / Issuer *</label>
-                      <input className="form-input" type="text" id="platform" name="platform" required placeholder="e.g. Amazon Web Services" />
+                      <input
+                        className="form-input"
+                        type="text"
+                        id="platform"
+                        name="platform"
+                        required
+                        placeholder="e.g. Amazon Web Services"
+                        defaultValue={itemToEdit ? (itemToEdit as CertificationItem).platform : ''}
+                      />
                     </div>
                     <div className="form-group">
                       <label className="form-label" htmlFor="url">Certificate Credential URL (Optional)</label>
-                      <input className="form-input" type="url" id="url" name="url" placeholder="https://creds.com/cert/123" />
+                      <input
+                        className="form-input"
+                        type="url"
+                        id="url"
+                        name="url"
+                        placeholder="https://creds.com/cert/123"
+                        defaultValue={itemToEdit ? ((itemToEdit as CertificationItem).url || '') : ''}
+                      />
                     </div>
                     <div className="form-group">
                       <label className="form-label" htmlFor="description">Description (Optional)</label>
-                      <textarea className="form-textarea" id="description" name="description" placeholder="Detail the skills validated or credentials earned..." />
+                      <textarea
+                        className="form-textarea"
+                        id="description"
+                        name="description"
+                        placeholder="Detail the skills validated or credentials earned..."
+                        defaultValue={itemToEdit ? ((itemToEdit as CertificationItem).description || '') : ''}
+                      />
                     </div>
                   </>
                 )}
@@ -541,19 +773,49 @@ export default function DashboardPage() {
                   <>
                     <div className="form-group">
                       <label className="form-label" htmlFor="title">Award / Honor Title *</label>
-                      <input className="form-input" type="text" id="title" name="title" required placeholder="e.g. Dean's List or Hackathon Winner" />
+                      <input
+                        className="form-input"
+                        type="text"
+                        id="title"
+                        name="title"
+                        required
+                        placeholder="e.g. Dean's List or Hackathon Winner"
+                        defaultValue={itemToEdit ? (itemToEdit as AwardItem).title : ''}
+                      />
                     </div>
                     <div className="form-group">
                       <label className="form-label" htmlFor="issuer">Issuer / Presenter *</label>
-                      <input className="form-input" type="text" id="issuer" name="issuer" required placeholder="e.g. Stanford University" />
+                      <input
+                        className="form-input"
+                        type="text"
+                        id="issuer"
+                        name="issuer"
+                        required
+                        placeholder="e.g. Stanford University"
+                        defaultValue={itemToEdit ? (itemToEdit as AwardItem).issuer : ''}
+                      />
                     </div>
                     <div className="form-group">
                       <label className="form-label" htmlFor="awardType">Award Level / Type *</label>
-                      <input className="form-input" type="text" id="awardType" name="awardType" required placeholder="e.g. Academic, Professional, 1st Place" />
+                      <input
+                        className="form-input"
+                        type="text"
+                        id="awardType"
+                        name="awardType"
+                        required
+                        placeholder="e.g. Academic, Professional, 1st Place"
+                        defaultValue={itemToEdit ? (itemToEdit as AwardItem).awardType : ''}
+                      />
                     </div>
                     <div className="form-group">
                       <label className="form-label" htmlFor="description">Description (Optional)</label>
-                      <textarea className="form-textarea" id="description" name="description" placeholder="Details about selection criteria or project highlights..." />
+                      <textarea
+                        className="form-textarea"
+                        id="description"
+                        name="description"
+                        placeholder="Details about selection criteria or project highlights..."
+                        defaultValue={itemToEdit ? ((itemToEdit as AwardItem).description || '') : ''}
+                      />
                     </div>
                   </>
                 )}
@@ -562,33 +824,58 @@ export default function DashboardPage() {
                 {activeTab === 'certifications' ? (
                   <div className="form-group">
                     <label className="form-label" htmlFor="completedOn">Date Completed (Optional)</label>
-                    <input className="form-input" type="date" id="completedOn" name="completedOn" />
+                    <input
+                      className="form-input"
+                      type="date"
+                      id="completedOn"
+                      name="completedOn"
+                      defaultValue={itemToEdit ? formatDateForInput((itemToEdit as CertificationItem).completedOn) : ''}
+                    />
                   </div>
                 ) : activeTab === 'awards' ? (
                   <div className="form-group">
                     <label className="form-label" htmlFor="date">Date Received (Optional)</label>
-                    <input className="form-input" type="date" id="date" name="date" />
+                    <input
+                      className="form-input"
+                      type="date"
+                      id="date"
+                      name="date"
+                      defaultValue={itemToEdit ? formatDateForInput((itemToEdit as AwardItem).date) : ''}
+                    />
                   </div>
                 ) : (
                   /* Standard Date ranges for Education, Projects, and Experience */
                   <div className="form-row">
                     <div className="form-group">
                       <label className="form-label" htmlFor="fromDate">Start Date *</label>
-                      <input className="form-input" type="date" id="fromDate" name="fromDate" required />
+                      <input
+                        className="form-input"
+                        type="date"
+                        id="fromDate"
+                        name="fromDate"
+                        required
+                        defaultValue={itemToEdit && 'fromDate' in itemToEdit ? formatDateForInput(itemToEdit.fromDate) : ''}
+                      />
                     </div>
                     <div className="form-group">
                       <label className="form-label" htmlFor="toDate">End Date (Optional)</label>
-                      <input className="form-input" type="date" id="toDate" name="toDate" />
+                      <input
+                        className="form-input"
+                        type="date"
+                        id="toDate"
+                        name="toDate"
+                        defaultValue={itemToEdit && 'toDate' in itemToEdit ? formatDateForInput(itemToEdit.toDate) : ''}
+                      />
                     </div>
                   </div>
                 )}
 
                 <div className="form-actions">
-                  <button className="btn-form-cancel" type="button" onClick={() => setIsAdding(false)}>
+                  <button className="btn-form-cancel" type="button" onClick={handleCloseForm}>
                     Cancel
                   </button>
                   <button className="btn-form-save" type="submit" disabled={submitting}>
-                    {submitting ? 'Saving...' : 'Save Block'}
+                    {submitting ? 'Saving...' : itemToEdit ? 'Save Changes' : 'Save Item'}
                   </button>
                 </div>
               </form>
@@ -596,6 +883,79 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal Overlay Dialog */}
+      {itemToDelete && (
+        <div className="modal-overlay" onClick={() => setItemToDelete(null)}>
+          <div className="modal-card" style={{ maxWidth: '380px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">Delete Item</h3>
+              <button className="btn-modal-close" onClick={() => setItemToDelete(null)} title="Close dialog">
+                <svg viewBox="0 0 24 24">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <div className="modal-body" style={{ padding: '1.25rem 1.5rem', textAlign: 'center' }}>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.5rem', lineHeight: '1.5' }}>
+                Are you sure you want to permanently delete this item? This action cannot be undone.
+              </p>
+              <div className="form-actions" style={{ justifyContent: 'center', gap: '0.75rem' }}>
+                <button className="btn-form-cancel" type="button" onClick={() => setItemToDelete(null)}>
+                  Cancel
+                </button>
+                <button
+                  className="btn-form-delete"
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  disabled={deleting}
+                  style={{
+                    backgroundColor: '#DC2626',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    padding: '0.5rem 1.25rem',
+                    borderRadius: '6px',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'opacity 0.2s ease',
+                    opacity: deleting ? 0.7 : 1
+                  }}
+                >
+                  {deleting ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notifications container */}
+      <div className="toast-container">
+        {toasts.map((toast) => (
+          <div key={toast.id} className={`toast-notification toast-${toast.type}`}>
+            <div className="toast-icon">
+              {toast.type === 'success' && (
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              )}
+              {toast.type === 'error' && (
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              )}
+              {toast.type === 'info' && (
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              )}
+            </div>
+            <span>{toast.message}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

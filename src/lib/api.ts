@@ -1,4 +1,4 @@
-import { BaseAPI, getWithToken, postWithToken } from './network';
+import { BaseAPI, getWithToken, postWithToken, deleteWithToken, putWithToken } from './network';
 
 export interface User {
   name: string;
@@ -95,6 +95,21 @@ export const itemService = {
    */
   createItem: async (item: Omit<ResumeItem, 'id' | 'username' | 'createdAt' | 'updatedAt'>): Promise<ResumeItem> => {
     const response = await postWithToken('/api/item', item);
+    return response.data;
+  },
+
+  /**
+   * Deletes a resume item by ID.
+   */
+  deleteItem: async (id: string): Promise<void> => {
+    await deleteWithToken(`/api/item/${id}`);
+  },
+
+  /**
+   * Updates an existing resume item.
+   */
+  updateItem: async (id: string, item: Omit<ResumeItem, 'id' | 'username' | 'createdAt' | 'updatedAt'>): Promise<ResumeItem> => {
+    const response = await putWithToken(`/api/item/${id}`, item);
     return response.data;
   }
 };

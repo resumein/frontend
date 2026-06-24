@@ -28,3 +28,11 @@ export const getWithToken = async (url: string) => {
 export const postWithToken = async (url: string, data: any) => {
     return await API.post(url, data);
 };
+
+export const deleteWithToken = async (url: string, config?: any) => {
+    return await API.delete(url, config);
+};
+
+export const putWithToken = async (url: string, data: any) => {
+    return await API.put(url, data);
+};
