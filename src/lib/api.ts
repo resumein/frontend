@@ -1,4 +1,4 @@
-import { BaseAPI } from './network';
+import { BaseAPI, getWithToken, postWithToken } from './network';
 
 export interface User {
   name: string;
@@ -11,6 +11,66 @@ export interface AuthResponse {
   user: User;
 }
 
+export interface BaseItem {
+  id?: string;
+  type: 'education' | 'project' | 'experience' | 'certification' | 'award';
+  username?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface EducationItem extends BaseItem {
+  type: 'education';
+  school: string;
+  degree: string;
+  field: string;
+  fromDate: string;
+  toDate?: string;
+  grade?: string;
+}
+
+export interface ProjectItem extends BaseItem {
+  type: 'project';
+  name: string;
+  github: string;
+  url?: string;
+  description: string;
+  fromDate: string;
+  toDate?: string;
+}
+
+export interface ExperienceItem extends BaseItem {
+  type: 'experience';
+  title: string;
+  company: string;
+  fromDate: string;
+  toDate?: string;
+  description?: string;
+  role?: string[];
+}
+
+export interface CertificationItem extends BaseItem {
+  type: 'certification';
+  title: string;
+  platform: string;
+  description?: string;
+  url?: string;
+  completedOn?: string;
+  role?: string[];
+}
+
+export interface AwardItem extends BaseItem {
+  type: 'award';
+  title: string;
+  issuer: string;
+  awardType: string;
+  description?: string;
+  date?: string;
+  role?: string[];
+}
+
+export type ResumeItem = EducationItem | ProjectItem | ExperienceItem | CertificationItem | AwardItem;
+
 export const authService = {
   /**
    * Exchanges the GitHub OAuth temporary code for a session token and user info.
@@ -21,7 +81,24 @@ export const authService = {
   },
 };
 
+export const itemService = {
+  /**
+   * Fetches all items belonging to the authenticated user.
+   */
+  getItems: async (): Promise<ResumeItem[]> => {
+    const response = await getWithToken('/api/item');
+    return response.data;
+  },
+
+  /**
+   * Creates a new resume item (project, education, experience, certification, award).
+   */
+  createItem: async (item: Omit<ResumeItem, 'id' | 'username' | 'createdAt' | 'updatedAt'>): Promise<ResumeItem> => {
+    const response = await postWithToken('/api/item', item);
+    return response.data;
+  }
+};
+
 export const resumeService = {
   // Placeholder for future resume backend integration endpoints
-  // e.g. fetchBlocks, saveBlocks, etc.
 };

@@ -24,3 +24,7 @@ API.interceptors.request.use((config) => {// Update global state AND save to bro
 export const getWithToken = async (url: string) => {
     return await API.get(url);
 };
+
+export const postWithToken = async (url: string, data: any) => {
+    return await API.post(url, data);
+};
