@@ -1,33 +1,14 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUserStore } from '../store/userStore';
-import { useResumeStore } from '../store/resumeStore';
-import { resumeService } from '../lib/api';
 
-interface NavbarProps {
-  onSaveSuccess?: () => void;
-}
-
-export default function Navbar({ onSaveSuccess }: NavbarProps) {
+export default function Navbar() {
   const navigate = useNavigate();
   const user = useUserStore((state) => state.user);
   const clearAuth = useUserStore((state) => state.clearAuth);
 
-  const resumes = useResumeStore((state) => state.resumes);
-  const selectedResumeId = useResumeStore((state) => state.selectedResumeId);
-  const setSelectedResumeId = useResumeStore((state) => state.setSelectedResumeId);
-  const setIsCreatingResume = useResumeStore((state) => state.setIsCreatingResume);
-
-  const isDirty = useResumeStore((state) => state.isDirty);
-  const activeContent = useResumeStore((state) => state.activeContent);
-  const saveActiveContent = useResumeStore((state) => state.saveActiveContent);
-  const [savingChanges, setSavingChanges] = useState(false);
-
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  const [resumeDropdownOpen, setResumeDropdownOpen] = useState(false);
-  const resumeDropdownRef = useRef<HTMLDivElement>(null);
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window !== 'undefined') {
@@ -35,8 +16,6 @@ export default function Navbar({ onSaveSuccess }: NavbarProps) {
     }
     return 'light';
   });
-
-  const currentResume = resumes.find(r => r.id === selectedResumeId);
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -49,14 +28,11 @@ export default function Navbar({ onSaveSuccess }: NavbarProps) {
     }
   }, [theme]);
 
-  // Click outside to close dropdowns
+  // Click outside to close dropdown
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setDropdownOpen(false);
-      }
-      if (resumeDropdownRef.current && !resumeDropdownRef.current.contains(event.target as Node)) {
-        setResumeDropdownOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -74,109 +50,13 @@ export default function Navbar({ onSaveSuccess }: NavbarProps) {
     navigate('/');
   };
 
-  const handleSave = async () => {
-    if (!selectedResumeId || !activeContent || !currentResume) return;
-    setSavingChanges(true);
-    try {
-      const updated = await resumeService.updateResume(
-        selectedResumeId,
-        currentResume.filename,
-        currentResume.template,
-        activeContent
-      );
-      saveActiveContent(updated);
-      if (onSaveSuccess) {
-        onSaveSuccess();
-      }
-    } catch (err) {
-      console.error('Failed to save resume content:', err);
-    } finally {
-      setSavingChanges(false);
-    }
-  };
-
   return (
     <nav className="navbar">
-      <div className="logo-section-container" style={{ display: 'flex', alignItems: 'center', gap: '2.5rem' }}>
-        <a href="/" className="logo" style={{ textDecoration: 'none' }}>
-          resume<span>in</span>
-        </a>
-        
-        {user && resumes.length > 0 && (
-          <div className="resume-selector-container" ref={resumeDropdownRef}>
-            <button 
-              className="resume-selector-btn"
-              onClick={() => setResumeDropdownOpen(!resumeDropdownOpen)}
-              aria-expanded={resumeDropdownOpen}
-              aria-haspopup="true"
-            >
-              <svg className="resume-selector-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-              </svg>
-              <span className="resume-selector-name">{currentResume?.filename || 'Select Resume'}</span>
-              <svg className={`resume-selector-arrow ${resumeDropdownOpen ? 'open' : ''}`} viewBox="0 0 24 24">
-                <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-
-            {resumeDropdownOpen && (
-              <div className="resume-selector-dropdown">
-                <div className="dropdown-label">Select Resume</div>
-                <div className="resume-list-scrollable">
-                  {resumes.map((resume) => (
-                    <button 
-                      key={resume.id}
-                      className={`resume-dropdown-item ${resume.id === selectedResumeId ? 'active' : ''}`}
-                      onClick={() => {
-                        setSelectedResumeId(resume.id);
-                        setResumeDropdownOpen(false);
-                      }}
-                    >
-                      <svg className="resume-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <polyline points="14 2 14 8 20 8"/>
-                      </svg>
-                      <span className="resume-item-name">{resume.filename}</span>
-                      {resume.id === selectedResumeId && (
-                        <svg className="resume-item-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                          <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                      )}
-                    </button>
-                  ))}
-                </div>
-                <hr className="dropdown-divider" />
-                <button 
-                  className="resume-dropdown-item create-new"
-                  onClick={() => {
-                    setIsCreatingResume(true);
-                    setResumeDropdownOpen(false);
-                  }}
-                >
-                  <svg className="resume-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                  </svg>
-                  Create New Resume
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      <a href="/" className="logo">
+        resume<span>in</span>
+      </a>
 
       <div className="nav-links">
-        {isDirty && (
-          <button 
-            onClick={handleSave} 
-            className="save-changes-btn"
-            disabled={savingChanges}
-          >
-            {savingChanges ? 'Saving...' : 'Save Changes'}
-          </button>
-        )}
-
         <button
           onClick={toggleTheme}
           className="theme-toggle-btn"

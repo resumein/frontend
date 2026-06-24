@@ -1,20 +1,23 @@
 import { useState, useEffect } from 'react';
 import { useUserStore } from '../store/userStore';
 import { useItemStore } from '../store/itemStore';
-import { useResumeStore } from '../store/resumeStore';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
-import ItemCard from '../components/ItemCard';
-import ItemFormModal from '../components/ItemFormModal';
-import CreateResumeModal from '../components/CreateResumeModal';
-import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
-import ToastContainer from '../components/ToastContainer';
-import type { Toast } from '../components/ToastContainer';
-import { itemService, resumeService } from '../lib/api';
-import type { ResumeItem } from '../lib/api';
-import ResumePreview from '../components/ResumePreview';
-import ResumeEditorPanel from '../components/ResumeEditorPanel';
-import { mapItemToSectionData } from '../lib/templateUtils';
+import { itemService } from '../lib/api';
+import type {
+  ResumeItem,
+  EducationItem,
+  ProjectItem,
+  ExperienceItem,
+  CertificationItem,
+  AwardItem
+} from '../lib/api';
+
+interface Toast {
+  id: string;
+  message: string;
+  type: 'success' | 'error' | 'info';
+}
 
 export default function DashboardPage() {
   const user = useUserStore((state) => state.user);
@@ -30,40 +33,6 @@ export default function DashboardPage() {
   const loadingItems = useItemStore((state) => state.loading);
   const setLoadingItems = useItemStore((state) => state.setLoading);
 
-  // Zustand resumes store state
-  const resumes = useResumeStore((state) => state.resumes);
-  const setResumes = useResumeStore((state) => state.setResumes);
-  const setSelectedResumeId = useResumeStore((state) => state.setSelectedResumeId);
-  const addResume = useResumeStore((state) => state.addResume);
-  const setLoadingResumes = useResumeStore((state) => state.setLoading);
-  const isCreatingResume = useResumeStore((state) => state.isCreatingResume);
-  const setIsCreatingResume = useResumeStore((state) => state.setIsCreatingResume);
-  const isDirty = useResumeStore((state) => state.isDirty);
-  const activeContent = useResumeStore((state) => state.activeContent);
-  const templateConfig = useResumeStore((state) => state.templateConfig);
-
-  const checkIfUsed = (item: ResumeItem, content: any) => {
-    if (!content || !templateConfig) return false;
-    
-    // Find the section that matches this item type
-    const section = templateConfig.sections.find(s => 
-      s.id === item.type || (s.dragTypes && s.dragTypes.includes(item.type))
-    );
-    if (!section) return false;
-
-    const list = content[section.id] || [];
-    if (!Array.isArray(list)) return false;
-
-    const mapped = mapItemToSectionData(item, section);
-
-    return list.some((existing: any) => {
-      return Object.keys(mapped).every(key => {
-        if (key === 'bullets' || key === 'description' || !mapped[key]) return true;
-        return String(existing[key] || '').trim().toLowerCase() === String(mapped[key] || '').trim().toLowerCase();
-      });
-    });
-  };
-
   // Local state for modals and forms
   const [isAdding, setIsAdding] = useState<boolean>(false);
   const [itemToEdit, setItemToEdit] = useState<ResumeItem | null>(null);
@@ -72,26 +41,6 @@ export default function DashboardPage() {
   // State for delete confirmation modal
   const [itemToDelete, setItemToDelete] = useState<ResumeItem | null>(null);
   const [deleting, setDeleting] = useState<boolean>(false);
-
-  // Resume creation states
-  const [creatingResumeLoader, setCreatingResumeLoader] = useState<boolean>(false);
-
-  // Section click active state
-  const [activeEditSection, setActiveEditSection] = useState<string | null>(null);
-
-  // Prevent unload if there are unsaved changes
-  useEffect(() => {
-    if (!isDirty) return;
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = '';
-      return '';
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [isDirty]);
 
   // Toast notifications state
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -104,46 +53,30 @@ export default function DashboardPage() {
     }, 3000);
   };
 
-  // Fetch items and resumes in parallel on user login / mount
+  // Fetch items on user login / mount
   useEffect(() => {
     if (user) {
       setLoadingItems(true);
-      setLoadingResumes(true);
-
-      Promise.all([
-        itemService.getItems(),
-        resumeService.getResumes()
-      ])
-        .then(([itemsData, resumesData]) => {
-          setItems(itemsData);
-          setResumes(resumesData);
-
-          // If there are resumes, choose the one last updated
-          if (resumesData && resumesData.length > 0) {
-            const sorted = [...resumesData].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-            setSelectedResumeId(sorted[0].id);
-          } else {
-            // Open new resume prompt if they have 0 resumes
-            setIsCreatingResume(true);
-          }
+      itemService.getItems()
+        .then((data) => {
+          setItems(data);
         })
         .catch((err) => {
-          console.error("Failed to load initial user data:", err);
-          showToast("Failed to load dashboard data.", "error");
+          console.error("Failed to load user items:", err);
+          showToast("Failed to load your resume items.", "error");
         })
         .finally(() => {
           setLoadingItems(false);
-          setLoadingResumes(false);
         });
     }
-  }, [user, setItems, setResumes, setSelectedResumeId, setLoadingItems, setLoadingResumes, setIsCreatingResume]);
+  }, [user, setItems, setLoadingItems]);
 
   const handleCloseForm = () => {
     setIsAdding(false);
     setItemToEdit(null);
   };
 
-  // Escape key event listener to close modal dialogs and right side panel
+  // Escape key event listener to close modal dialogs
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -151,32 +84,12 @@ export default function DashboardPage() {
           handleCloseForm();
         } else if (itemToDelete) {
           setItemToDelete(null);
-        } else if (isCreatingResume && resumes.length > 0) {
-          setIsCreatingResume(false);
-        } else if (activeEditSection) {
-          setActiveEditSection(null);
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isAdding, itemToDelete, isCreatingResume, resumes, activeEditSection]);
-
-  // Click outside to collapse the right editor panel
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (activeEditSection) {
-        const target = event.target as HTMLElement;
-        if (target.closest('.preview-canvas-container') || target.closest('.dashboard-main')) {
-          setActiveEditSection(null);
-        }
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [activeEditSection]);
+  }, [isAdding, itemToDelete]);
 
   if (!user) {
     return (
@@ -192,6 +105,7 @@ export default function DashboardPage() {
     );
   }
 
+  // Canva-style click handler for slim sidebar tabs
   const handleTabChange = (tabId: string) => {
     handleCloseForm(); // Reset form modal on tab switch
     if (sidebarOpen && activeTab === tabId) {
@@ -202,10 +116,12 @@ export default function DashboardPage() {
     }
   };
 
+  // Format tab ID to a friendly header label
   const getTabLabel = (id: string) => {
     return id.charAt(0).toUpperCase() + id.slice(1);
   };
 
+  // Format tab ID to a friendly singular modal title label
   const getModalTitleLabel = (tab: string) => {
     if (tab === 'projects') return 'Project';
     if (tab === 'certifications') return 'Certification';
@@ -213,6 +129,7 @@ export default function DashboardPage() {
     return getTabLabel(tab);
   };
 
+  // Format Date string for display
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '';
     try {
@@ -223,6 +140,7 @@ export default function DashboardPage() {
     }
   };
 
+  // Format ISO date string into input tag value format (YYYY-MM-DD)
   const formatDateForInput = (dateStr?: string) => {
     if (!dateStr) return '';
     try {
@@ -233,6 +151,7 @@ export default function DashboardPage() {
     }
   };
 
+  // Filter items matching active category tab
   const activeItems = items.filter(item => {
     if (activeTab === 'projects') {
       return item.type === 'project';
@@ -246,6 +165,7 @@ export default function DashboardPage() {
     return item.type === activeTab;
   });
 
+  // Form submission handler (Creates or Updates an item)
   const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
@@ -254,6 +174,7 @@ export default function DashboardPage() {
     try {
       setSubmitting(true);
 
+      // Map activeTab to payload type ('projects' -> 'project', etc.)
       let payload: any = {
         type: activeTab === 'projects' ? 'project' :
           activeTab === 'certifications' ? 'certification' :
@@ -369,6 +290,7 @@ export default function DashboardPage() {
     }
   };
 
+  // Confirm and delete transaction handler
   const handleConfirmDelete = async () => {
     if (!itemToDelete || !itemToDelete.id) return;
 
@@ -386,41 +308,21 @@ export default function DashboardPage() {
     }
   };
 
-  const handleCreateResumeSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const formData = new FormData(form);
-    const filename = formData.get('filename') as string;
-    const template = formData.get('template') as string;
-
-    try {
-      setCreatingResumeLoader(true);
-      const newResume = await resumeService.createResume(filename, template);
-      addResume(newResume);
-      setSelectedResumeId(newResume.id);
-      setIsCreatingResume(false);
-      showToast("Resume created successfully.", "success");
-      form.reset();
-    } catch (err) {
-      console.error("Failed to create resume:", err);
-      showToast("Failed to create resume. Please try again.", "error");
-    } finally {
-      setCreatingResumeLoader(false);
-    }
-  };
-
   return (
     <div className="dashboard-container">
-      <Navbar onSaveSuccess={() => showToast("Resume saved successfully!", "success")} />
+      <Navbar />
       <div className="dashboard-body">
 
+        {/* Parent container wrapping both the slim tab bar and expanded panel */}
         <div className={`editor-sidebar-container ${sidebarOpen ? '' : 'collapsed'}`}>
+          {/* Leftmost: Slim tab bar (floats when container is collapsed) */}
           <Sidebar
             activeTab={activeTab}
             sidebarOpen={sidebarOpen}
             onTabChange={handleTabChange}
           />
 
+          {/* Middle: Expanded sidebar panel */}
           <div className={`editor-expanded-panel ${sidebarOpen ? '' : 'collapsed'}`}>
             <div className="panel-inner-content" key={activeTab}>
 
@@ -461,29 +363,188 @@ export default function DashboardPage() {
               ) : (
                 <div className="items-list">
                   {activeItems.map((item) => (
-                    <ItemCard
-                      key={item.id}
-                      item={item}
-                      isUsed={checkIfUsed(item, activeContent)}
-                      onEdit={(it) => {
-                        setItemToEdit(it);
-                        setIsAdding(true);
-                      }}
-                      onDelete={(it) => setItemToDelete(it)}
-                      formatDate={formatDate}
-                    />
+                    <div key={item.id} className="item-card">
+
+                      {/* Action buttons wrapper (visible bottom-right on hover) */}
+                      <div className="item-card-actions">
+                        <button
+                          className="item-card-btn edit"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setItemToEdit(item);
+                            setIsAdding(true);
+                          }}
+                          title="Edit item"
+                          aria-label="Edit item"
+                        >
+                          <svg viewBox="0 0 24 24">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5Z"></path>
+                          </svg>
+                        </button>
+                        <button
+                          className="item-card-btn delete"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setItemToDelete(item);
+                          }}
+                          title="Delete item"
+                          aria-label="Delete item"
+                        >
+                          <svg viewBox="0 0 24 24">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                          </svg>
+                        </button>
+                      </div>
+
+                      {item.type === 'education' && (
+                        <>
+                          <div className="item-card-title">{(item as EducationItem).school}</div>
+                          <div className="item-card-subtitle">
+                            {(item as EducationItem).degree} in {(item as EducationItem).field}
+                          </div>
+                          {(item as EducationItem).grade && (
+                            <span className="item-card-badge">Grade: {(item as EducationItem).grade}</span>
+                          )}
+                          <div className="item-card-dates">
+                            <svg style={{ width: '0.8rem', height: '0.8rem', opacity: 0.7 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                              <line x1="16" y1="2" x2="16" y2="6"></line>
+                              <line x1="8" y1="2" x2="8" y2="6"></line>
+                              <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                            <span>{formatDate(item.fromDate)} – {item.toDate ? formatDate(item.toDate) : 'Present'}</span>
+                          </div>
+                        </>
+                      )}
+
+                      {item.type === 'project' && (
+                        <>
+                          <div className="item-card-title">{(item as ProjectItem).name}</div>
+                          <p className="item-card-description">{(item as ProjectItem).description}</p>
+                          <div className="item-card-links">
+                            <a href={(item as ProjectItem).github} target="_blank" rel="noopener noreferrer" className="item-card-link">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                              </svg>
+                              GitHub
+                            </a>
+                            {(item as ProjectItem).url && (
+                              <a href={(item as ProjectItem).url} target="_blank" rel="noopener noreferrer" className="item-card-link">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                  <polyline points="15 3 21 3 21 9"></polyline>
+                                  <line x1="10" y1="14" x2="21" y2="3"></line>
+                                </svg>
+                                Live
+                              </a>
+                            )}
+                          </div>
+                          <div className="item-card-dates">
+                            <svg style={{ width: '0.8rem', height: '0.8rem', opacity: 0.7 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                              <line x1="16" y1="2" x2="16" y2="6"></line>
+                              <line x1="8" y1="2" x2="8" y2="6"></line>
+                              <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                            <span>{formatDate(item.fromDate)} – {item.toDate ? formatDate(item.toDate) : 'Present'}</span>
+                          </div>
+                        </>
+                      )}
+
+                      {item.type === 'experience' && (
+                        <>
+                          <div className="item-card-title">{(item as ExperienceItem).title}</div>
+                          <div className="item-card-subtitle">{(item as ExperienceItem).company}</div>
+                          {(item as ExperienceItem).description && (
+                            <p className="item-card-description">{(item as ExperienceItem).description}</p>
+                          )}
+                          <div className="item-card-dates">
+                            <svg style={{ width: '0.8rem', height: '0.8rem', opacity: 0.7 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                              <line x1="16" y1="2" x2="16" y2="6"></line>
+                              <line x1="8" y1="2" x2="8" y2="6"></line>
+                              <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                            <span>{formatDate(item.fromDate)} – {item.toDate ? formatDate(item.toDate) : 'Present'}</span>
+                          </div>
+                        </>
+                      )}
+
+                      {item.type === 'certification' && (
+                        <>
+                          <div className="item-card-title">{(item as CertificationItem).title}</div>
+                          <div className="item-card-subtitle">{(item as CertificationItem).platform}</div>
+                          {(item as CertificationItem).description && (
+                            <p className="item-card-description">{(item as CertificationItem).description}</p>
+                          )}
+                          {(item as CertificationItem).url && (
+                            <div className="item-card-links" style={{ marginTop: '0.2rem' }}>
+                              <a href={(item as CertificationItem).url} target="_blank" rel="noopener noreferrer" className="item-card-link">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                  <polyline points="15 3 21 3 21 9"></polyline>
+                                  <line x1="10" y1="14" x2="21" y2="3"></line>
+                                </svg>
+                                View Credential
+                              </a>
+                            </div>
+                          )}
+                          {(item as CertificationItem).completedOn && (
+                            <div className="item-card-dates">
+                              <svg style={{ width: '0.8rem', height: '0.8rem', opacity: 0.7 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                              </svg>
+                              <span>Completed: {formatDate((item as CertificationItem).completedOn)}</span>
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      {item.type === 'award' && (
+                        <>
+                          <div className="item-card-title">{(item as AwardItem).title}</div>
+                          <div className="item-card-subtitle">{(item as AwardItem).issuer}</div>
+                          {(item as AwardItem).description && (
+                            <p className="item-card-description">{(item as AwardItem).description}</p>
+                          )}
+                          {(item as AwardItem).awardType && (
+                            <span className="item-card-badge">{(item as AwardItem).awardType}</span>
+                          )}
+                          {(item as AwardItem).date && (
+                            <div className="item-card-dates">
+                              <svg style={{ width: '0.8rem', height: '0.8rem', opacity: 0.7 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                              </svg>
+                              <span>Date: {formatDate((item as AwardItem).date)}</span>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}
 
             </div>
 
+            {/* Absolute circular button sitting on the panel border */}
             <button
               className="sidebar-toggle-btn"
               onClick={() => setSidebarOpen(false)}
               title="Collapse sidebar"
               aria-label="Collapse sidebar"
             >
+              {/* Left arrow icon */}
               <svg viewBox="0 0 24 24">
                 <polyline points="15 18 9 12 15 6"></polyline>
               </svg>
@@ -492,47 +553,409 @@ export default function DashboardPage() {
         </div>
 
         {/* Rightmost: Main Workspace (Canvas area) */}
-        <main className={`dashboard-main ${activeEditSection ? 'panel-expanded' : ''}`}>
-          <ResumePreview onSectionClick={(section) => setActiveEditSection(section)} />
+        <main className="dashboard-main">
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}>
+            Resume Workspace / Live Preview
+          </p>
         </main>
-
-        <ResumeEditorPanel 
-          section={activeEditSection} 
-          onClose={() => setActiveEditSection(null)} 
-        />
       </div>
 
       {/* Creation/Edit Modal Overlay Dialog */}
-      <ItemFormModal
-        isOpen={isAdding}
-        onClose={handleCloseForm}
-        activeTab={activeTab}
-        itemToEdit={itemToEdit}
-        onSubmit={handleFormSubmit}
-        submitting={submitting}
-        getModalTitleLabel={getModalTitleLabel}
-        formatDateForInput={formatDateForInput}
-      />
+      {isAdding && (
+        <div className="modal-overlay" onClick={handleCloseForm}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">
+                {itemToEdit ? 'Edit' : 'Add New'} {getModalTitleLabel(activeTab)}
+              </h3>
+              <button className="btn-modal-close" onClick={handleCloseForm} title="Close dialog">
+                <svg viewBox="0 0 24 24">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <div className="modal-body">
+              <form className="item-form" onSubmit={handleFormSubmit}>
+                {activeTab === 'education' && (
+                  <>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="school">School / Institution *</label>
+                      <input
+                        className="form-input"
+                        type="text"
+                        id="school"
+                        name="school"
+                        required
+                        placeholder="e.g. Stanford University"
+                        defaultValue={itemToEdit ? (itemToEdit as EducationItem).school : ''}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="degree">Degree *</label>
+                      <input
+                        className="form-input"
+                        type="text"
+                        id="degree"
+                        name="degree"
+                        required
+                        placeholder="e.g. Bachelor of Science"
+                        defaultValue={itemToEdit ? (itemToEdit as EducationItem).degree : ''}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="field">Field of Study *</label>
+                      <input
+                        className="form-input"
+                        type="text"
+                        id="field"
+                        name="field"
+                        required
+                        placeholder="e.g. Computer Science"
+                        defaultValue={itemToEdit ? (itemToEdit as EducationItem).field : ''}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="grade">Grade / GPA (Optional)</label>
+                      <input
+                        className="form-input"
+                        type="text"
+                        id="grade"
+                        name="grade"
+                        placeholder="e.g. 3.9 / 4.0 or First Class"
+                        defaultValue={itemToEdit ? ((itemToEdit as EducationItem).grade || '') : ''}
+                      />
+                    </div>
+                  </>
+                )}
+
+                {activeTab === 'projects' && (
+                  <>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="name">Project Name *</label>
+                      <input
+                        className="form-input"
+                        type="text"
+                        id="name"
+                        name="name"
+                        required
+                        placeholder="e.g. Resume Builder Web App"
+                        defaultValue={itemToEdit ? (itemToEdit as ProjectItem).name : ''}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="github">GitHub Repository URL *</label>
+                      <input
+                        className="form-input"
+                        type="url"
+                        id="github"
+                        name="github"
+                        required
+                        placeholder="https://github.com/username/project"
+                        defaultValue={itemToEdit ? (itemToEdit as ProjectItem).github : ''}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="url">Live Project URL (Optional)</label>
+                      <input
+                        className="form-input"
+                        type="url"
+                        id="url"
+                        name="url"
+                        placeholder="https://myproject.com"
+                        defaultValue={itemToEdit ? ((itemToEdit as ProjectItem).url || '') : ''}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="description">Description *</label>
+                      <textarea
+                        className="form-textarea"
+                        id="description"
+                        name="description"
+                        required
+                        placeholder="Describe key features, technologies used, and your individual contribution..."
+                        defaultValue={itemToEdit ? (itemToEdit as ProjectItem).description : ''}
+                      />
+                    </div>
+                  </>
+                )}
+
+                {activeTab === 'experience' && (
+                  <>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="title">Job Title *</label>
+                      <input
+                        className="form-input"
+                        type="text"
+                        id="title"
+                        name="title"
+                        required
+                        placeholder="e.g. Software Engineer"
+                        defaultValue={itemToEdit ? (itemToEdit as ExperienceItem).title : ''}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="company">Company / Organization *</label>
+                      <input
+                        className="form-input"
+                        type="text"
+                        id="company"
+                        name="company"
+                        required
+                        placeholder="e.g. Google"
+                        defaultValue={itemToEdit ? (itemToEdit as ExperienceItem).company : ''}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="description">Description (Optional)</label>
+                      <textarea
+                        className="form-textarea"
+                        id="description"
+                        name="description"
+                        placeholder="Summarize your tasks, achievements, and technology stack..."
+                        defaultValue={itemToEdit ? ((itemToEdit as ExperienceItem).description || '') : ''}
+                      />
+                    </div>
+                  </>
+                )}
+
+                {activeTab === 'certifications' && (
+                  <>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="title">Certification Name *</label>
+                      <input
+                        className="form-input"
+                        type="text"
+                        id="title"
+                        name="title"
+                        required
+                        placeholder="e.g. AWS Certified Solutions Architect"
+                        defaultValue={itemToEdit ? (itemToEdit as CertificationItem).title : ''}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="platform">Platform / Issuer *</label>
+                      <input
+                        className="form-input"
+                        type="text"
+                        id="platform"
+                        name="platform"
+                        required
+                        placeholder="e.g. Amazon Web Services"
+                        defaultValue={itemToEdit ? (itemToEdit as CertificationItem).platform : ''}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="url">Certificate Credential URL (Optional)</label>
+                      <input
+                        className="form-input"
+                        type="url"
+                        id="url"
+                        name="url"
+                        placeholder="https://creds.com/cert/123"
+                        defaultValue={itemToEdit ? ((itemToEdit as CertificationItem).url || '') : ''}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="description">Description (Optional)</label>
+                      <textarea
+                        className="form-textarea"
+                        id="description"
+                        name="description"
+                        placeholder="Detail the skills validated or credentials earned..."
+                        defaultValue={itemToEdit ? ((itemToEdit as CertificationItem).description || '') : ''}
+                      />
+                    </div>
+                  </>
+                )}
+
+                {activeTab === 'awards' && (
+                  <>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="title">Award / Honor Title *</label>
+                      <input
+                        className="form-input"
+                        type="text"
+                        id="title"
+                        name="title"
+                        required
+                        placeholder="e.g. Dean's List or Hackathon Winner"
+                        defaultValue={itemToEdit ? (itemToEdit as AwardItem).title : ''}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="issuer">Issuer / Presenter *</label>
+                      <input
+                        className="form-input"
+                        type="text"
+                        id="issuer"
+                        name="issuer"
+                        required
+                        placeholder="e.g. Stanford University"
+                        defaultValue={itemToEdit ? (itemToEdit as AwardItem).issuer : ''}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="awardType">Award Level / Type *</label>
+                      <input
+                        className="form-input"
+                        type="text"
+                        id="awardType"
+                        name="awardType"
+                        required
+                        placeholder="e.g. Academic, Professional, 1st Place"
+                        defaultValue={itemToEdit ? (itemToEdit as AwardItem).awardType : ''}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="description">Description (Optional)</label>
+                      <textarea
+                        className="form-textarea"
+                        id="description"
+                        name="description"
+                        placeholder="Details about selection criteria or project highlights..."
+                        defaultValue={itemToEdit ? ((itemToEdit as AwardItem).description || '') : ''}
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* Conditional Date inputs based on active tab category */}
+                {activeTab === 'certifications' ? (
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="completedOn">Date Completed (Optional)</label>
+                    <input
+                      className="form-input"
+                      type="date"
+                      id="completedOn"
+                      name="completedOn"
+                      defaultValue={itemToEdit ? formatDateForInput((itemToEdit as CertificationItem).completedOn) : ''}
+                    />
+                  </div>
+                ) : activeTab === 'awards' ? (
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="date">Date Received (Optional)</label>
+                    <input
+                      className="form-input"
+                      type="date"
+                      id="date"
+                      name="date"
+                      defaultValue={itemToEdit ? formatDateForInput((itemToEdit as AwardItem).date) : ''}
+                    />
+                  </div>
+                ) : (
+                  /* Standard Date ranges for Education, Projects, and Experience */
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="fromDate">Start Date *</label>
+                      <input
+                        className="form-input"
+                        type="date"
+                        id="fromDate"
+                        name="fromDate"
+                        required
+                        defaultValue={itemToEdit && 'fromDate' in itemToEdit ? formatDateForInput(itemToEdit.fromDate) : ''}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="toDate">End Date (Optional)</label>
+                      <input
+                        className="form-input"
+                        type="date"
+                        id="toDate"
+                        name="toDate"
+                        defaultValue={itemToEdit && 'toDate' in itemToEdit ? formatDateForInput(itemToEdit.toDate) : ''}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="form-actions">
+                  <button className="btn-form-cancel" type="button" onClick={handleCloseForm}>
+                    Cancel
+                  </button>
+                  <button className="btn-form-save" type="submit" disabled={submitting}>
+                    {submitting ? 'Saving...' : itemToEdit ? 'Save Changes' : 'Save Item'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal Overlay Dialog */}
-      <DeleteConfirmationModal
-        isOpen={!!itemToDelete}
-        onClose={() => setItemToDelete(null)}
-        onConfirm={handleConfirmDelete}
-        deleting={deleting}
-      />
-
-      {/* Create Resume Modal Overlay Dialog */}
-      <CreateResumeModal
-        isOpen={isCreatingResume}
-        onClose={() => setIsCreatingResume(false)}
-        onSubmit={handleCreateResumeSubmit}
-        loader={creatingResumeLoader}
-        hasResumes={resumes.length > 0}
-      />
+      {itemToDelete && (
+        <div className="modal-overlay" onClick={() => setItemToDelete(null)}>
+          <div className="modal-card" style={{ maxWidth: '380px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">Delete Item</h3>
+              <button className="btn-modal-close" onClick={() => setItemToDelete(null)} title="Close dialog">
+                <svg viewBox="0 0 24 24">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <div className="modal-body" style={{ padding: '1.25rem 1.5rem', textAlign: 'center' }}>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.5rem', lineHeight: '1.5' }}>
+                Are you sure you want to permanently delete this item? This action cannot be undone.
+              </p>
+              <div className="form-actions" style={{ justifyContent: 'center', gap: '0.75rem' }}>
+                <button className="btn-form-cancel" type="button" onClick={() => setItemToDelete(null)}>
+                  Cancel
+                </button>
+                <button
+                  className="btn-form-delete"
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  disabled={deleting}
+                  style={{
+                    backgroundColor: '#DC2626',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    padding: '0.5rem 1.25rem',
+                    borderRadius: '6px',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'opacity 0.2s ease',
+                    opacity: deleting ? 0.7 : 1
+                  }}
+                >
+                  {deleting ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Toast Notifications container */}
-      <ToastContainer toasts={toasts} />
+      <div className="toast-container">
+        {toasts.map((toast) => (
+          <div key={toast.id} className={`toast-notification toast-${toast.type}`}>
+            <div className="toast-icon">
+              {toast.type === 'success' && (
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              )}
+              {toast.type === 'error' && (
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              )}
+              {toast.type === 'info' && (
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              )}
+            </div>
+            <span>{toast.message}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
