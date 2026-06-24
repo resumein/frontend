@@ -50,7 +50,7 @@ export default function ResumePreview({ onSectionClick }: ResumePreviewProps) {
     lastDropItemIdRef.current = itemStr;
     lastDropTimeRef.current = now;
 
-    const section = templateConfig?.sections.find(s => 
+    const section = templateConfig?.sections.find(s =>
       s.id === item.type || (s.dragTypes && s.dragTypes.includes(item.type))
     );
 
@@ -93,7 +93,7 @@ export default function ResumePreview({ onSectionClick }: ResumePreviewProps) {
 
     if (!typeOrId) return;
 
-    const matchedSection = templateConfig.sections.find(s => 
+    const matchedSection = templateConfig.sections.find(s =>
       s.id === typeOrId || (s.dragTypes && s.dragTypes.includes(typeOrId))
     );
 
@@ -238,7 +238,7 @@ export default function ResumePreview({ onSectionClick }: ResumePreviewProps) {
         templateConfig?.sections.forEach((section) => {
           const el = doc.querySelector(section.selector);
           if (el) {
-            el.onclick = (e) => {
+            el.onclick = (e: { preventDefault: () => void; stopPropagation: () => void; }) => {
               e.preventDefault();
               e.stopPropagation();
               onSectionClick(section.id);
