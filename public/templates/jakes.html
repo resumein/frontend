@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Resume</title>
+    <script id="template-config" type="application/json">
+    {
+      "sections": [
+        {
+          "id": "profile",
+          "title": "Profile Details",
+          "selector": "#header",
+          "type": "profile",
+          "fields": [
+            { "name": "name", "label": "Full Name", "type": "text", "placeholder": "Jake Ryan", "fromKey": ["name"] },
+            { "name": "phone", "label": "Phone Number", "type": "text", "placeholder": "+91 12345 67890", "fromKey": ["phone"] },
+            { "name": "email", "label": "Email Address", "type": "text", "placeholder": "jake@example.com", "fromKey": ["email"] },
+            { "name": "links", "label": "Links", "type": "text" }
+          ]
+        },
+        {
+          "id": "education",
+          "title": "Education History",
+          "selector": "#section-education",
+          "type": "education",
+          "dragTypes": ["education"],
+          "fields": [
+            { "name": "school", "label": "School Name", "type": "text", "placeholder": "Southwestern University", "fromKey": ["school", "company", "org", "name"] },
+            { "name": "location", "label": "Location", "type": "text", "placeholder": "Georgetown, TX", "fromKey": ["location"] },
+            { "name": "degree", "label": "Degree / Major", "type": "text", "placeholder": "Bachelor of Science in Computer Science", "fromKey": ["degree", "field"] },
+            { "name": "dates", "label": "Dates / Duration", "type": "text", "placeholder": "Aug. 2018 -- May 2021", "fromKey": ["formattedDates"] }
+          ]
+        },
+        {
+          "id": "experience",
+          "title": "Work Experience",
+          "selector": "#section-experience",
+          "type": "experience",
+          "dragTypes": ["experience"],
+          "fields": [
+            { "name": "title", "label": "Job Title", "type": "text", "placeholder": "Software Engineer", "fromKey": ["title"] },
+            { "name": "org", "label": "Organization / Company", "type": "text", "placeholder": "Texas A&M University", "fromKey": ["company", "org", "school"] },
+            { "name": "location", "label": "Location", "type": "text", "placeholder": "College Station, TX", "fromKey": ["location"] },
+            { "name": "dates", "label": "Dates / Duration", "type": "text", "placeholder": "June 2020 -- Present", "fromKey": ["formattedDates"] },
+            { "name": "bullets", "label": "Bullet Points", "type": "bullets", "placeholder": "Developed a REST API...", "fromKey": ["bullets", "role", "description"] }
+          ]
+        },
+        {
+          "id": "projects",
+          "title": "Projects",
+          "selector": "#section-projects",
+          "type": "projects",
+          "dragTypes": ["project", "certification", "award"],
+          "fields": [
+            { "name": "title", "label": "Project Title", "type": "text", "placeholder": "Gitlytics", "fromKey": ["title", "name"] },
+            { "name": "tech", "label": "Technologies Used", "type": "text", "placeholder": "Python, Flask, React, Docker", "fromKey": ["tech", "platform", "issuer"] },
+            { "name": "dates", "label": "Dates / Duration", "type": "text", "placeholder": "June 2020 -- Present", "fromKey": ["formattedDates"] },
+            { "name": "bullets", "label": "Bullet Points", "type": "bullets", "placeholder": "Visualized GitHub data...", "fromKey": ["bullets", "role", "description"] }
+          ]
+        },
+        {
+          "id": "skills",
+          "title": "Technical Skills",
+          "selector": "#section-skills",
+          "type": "skills",
+          "dragTypes": ["skill"],
+          "fields": [
+            { "name": "category", "label": "Category Label", "type": "text", "placeholder": "Languages", "fromKey": ["category"] },
+            { "name": "items", "label": "Skill Items (Comma-separated)", "type": "text", "placeholder": "Java, Python, C/C++, JavaScript", "fromKey": ["items"] }
+          ]
+        }
+      ]
+    }
+    </script>
+    <link rel="stylesheet" href="https://fonts.cdnfonts.com/css/computer-modern-serif">
+    <style>
+        @page {
+            size: letter;
+            margin: 0.5in;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            background: #ffffff;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: "Computer Modern Serif", "CMU Serif", "Latin Modern Roman", "Times New Roman", Times, serif;
+            color: #000;
+            font-size: 11pt;
+            font-weight: 400;
+            line-height: 1.25;
+            display: flex;
+            justify-content: center;
+        }
+
+        a {
+            color: #000 !important;
+        }
+
+        #page {
+            background: #fff;
+            width: 8.5in;
+            height: 11in;
+            padding: 0.5in 0.6in;
+        }
+
+        @media print {
+            body {
+                background: #fff;
+                padding: 0;
+            }
+
+            #page {
+                box-shadow: none;
+                width: auto;
+                min-height: auto;
+                padding: 0;
+            }
+        }
+
+        /* ---------- Header ---------- */
+        .header {
+            text-align: center;
+            margin-bottom: 6pt;
+        }
+
+        .header .name {
+            font-size: 26pt;
+            font-variant: small-caps;
+            font-weight: 700;
+        }
+
+        .header .contact {
+            font-size: 10pt;
+            font-weight: 400;
+            margin-top: 3pt;
+        }
+
+        .header .contact a {
+            color: #000 !important;
+            text-decoration: underline;
+            font-weight: 400;
+        }
+
+        .header .sep {
+            margin: 0 5pt;
+        }
+
+        /* ---------- Section headings ---------- */
+        section {
+            margin-top: 2pt;
+        }
+
+        h2.section-title {
+            font-variant: small-caps;
+            font-size: 13pt;
+            font-weight: 700;
+            margin: 9pt 0 2pt 0;
+            padding-bottom: 1pt;
+            border-bottom: 1px solid #000;
+        }
+
+        /* ---------- Generic entry list ---------- */
+        ul.entry-list {
+            list-style: none;
+            margin: 0;
+            padding-left: 0.15in;
+        }
+
+        .entry {
+            margin-bottom: 5pt;
+        }
+
+        .entry-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            width: 100%;
+        }
+
+        .entry-row .left {
+            font-weight: 700;
+        }
+
+        .entry-row .right {
+            font-weight: 400;
+            text-align: right;
+            white-space: nowrap;
+            padding-left: 8pt;
+        }
+
+        .entry-subrow {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            width: 100%;
+            font-style: italic;
+            font-size: 11pt;
+        }
+
+        .entry-subrow .left {
+            font-weight: 400;
+            font-style: italic;
+        }
+
+        .entry-subrow .right {
+            font-weight: 400;
+            font-style: italic;
+            text-align: right;
+            white-space: nowrap;
+            padding-left: 8pt;
+        }
+
+        /* Project heading row (not bold by default, bold only on title via <b>) */
+        .project-row .left {
+            font-weight: 400;
+        }
+
+        /* ---------- Bullet items ---------- */
+        ul.bullets {
+            margin: 2pt 0 4pt 0;
+            padding-left: 0.2in;
+        }
+
+        ul.bullets li {
+            font-size: 10.5pt;
+            margin-bottom: 1.5pt;
+        }
+
+        /* ---------- Skills section ---------- */
+        .skills-block {
+            padding-left: 0.15in;
+            font-size: 10.5pt;
+        }
+
+        .skills-block .skill-line {
+            margin-bottom: 2pt;
+        }
+
+        .skills-block .skill-line b {
+            font-weight: 700;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="page">
+        <div class="header" id="header"></div>
+
+        <section id="section-education"></section>
+        <section id="section-experience"></section>
+        <section id="section-projects"></section>
+        <section id="section-skills"></section>
+    </div>
+
+    <script>
+        const resumeData = {
+            // ---- Header ----
+            name: "Example Name",
+            phone: "+91 12345 67890",
+            email: "example@example.com",
+            links: [
+                { label: "linkedin.com/in/example", url: "https://linkedin.com/in/example" },
+                { label: "github.com/example", url: "https://github.com/example" }
+            ],
+
+            // ---- Education ----
+            education: [],
+
+            // ---- Experience ----
+            experience: [],
+
+            // ---- Projects ----
+            projects: [],
+
+            // ---- Technical Skills ----
+            skills: []
+        };
+
+        /* ===================================================================
+           RENDERING LOGIC — no need to edit below this line
+           =================================================================== */
+
+        function el(tag, opts = {}, children = []) {
+            const e = document.createElement(tag);
+            if (opts.class) e.className = opts.class;
+            if (opts.html !== undefined) e.innerHTML = opts.html;
+            if (opts.text !== undefined) e.textContent = opts.text;
+            children.forEach(c => c && e.appendChild(c));
+            return e;
+        }
+
+        function renderHeader(data) {
+            const header = document.getElementById('header');
+            const name = el('div', { class: 'name', text: data.name });
+
+            const contactParts = [];
+            if (data.phone) contactParts.push(escapeHtml(data.phone));
+            if (data.email) contactParts.push(`<a href="mailto:${data.email}">${escapeHtml(data.email)}</a>`);
+            (data.links || []).forEach(l => {
+                contactParts.push(`<a href="${l.url}" target="_blank" rel="noopener">${escapeHtml(l.label)}</a>`);
+            });
+
+            const contact = el('div', { class: 'contact', html: contactParts.join(' <span class="sep">|</span> ') });
+
+            header.appendChild(name);
+            header.appendChild(contact);
+        }
+
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
+        function renderBullets(bullets) {
+            const ul = el('ul', { class: 'bullets' });
+            (bullets || []).forEach(b => ul.appendChild(el('li', { text: b })));
+            return ul;
+        }
+
+        function renderEducation(data) {
+            const section = document.getElementById('section-education');
+            section.appendChild(el('h2', { class: 'section-title', text: 'Education' }));
+            if (data.education && data.education.length > 0) {
+                const list = el('ul', { class: 'entry-list' });
+                data.education.forEach(ed => {
+                    const entry = el('li', { class: 'entry' });
+                    const row = el('div', { class: 'entry-row' }, [
+                        el('span', { class: 'left', text: ed.school }),
+                        el('span', { class: 'right', text: ed.location })
+                    ]);
+                    const subrow = el('div', { class: 'entry-subrow' }, [
+                        el('span', { class: 'left', text: ed.degree }),
+                        el('span', { class: 'right', text: ed.dates })
+                    ]);
+                    entry.appendChild(row);
+                    entry.appendChild(subrow);
+                    list.appendChild(entry);
+                });
+                section.appendChild(list);
+            }
+        }
+
+        function renderExperience(data) {
+            const section = document.getElementById('section-experience');
+            section.appendChild(el('h2', { class: 'section-title', text: 'Experience' }));
+            if (data.experience && data.experience.length > 0) {
+                const list = el('ul', { class: 'entry-list' });
+                data.experience.forEach(job => {
+                    const entry = el('li', { class: 'entry' });
+                    const row = el('div', { class: 'entry-row' }, [
+                        el('span', { class: 'left', text: job.title }),
+                        el('span', { class: 'right', text: job.dates })
+                    ]);
+                    const subrow = el('div', { class: 'entry-subrow' }, [
+                        el('span', { class: 'left', text: job.org }),
+                        el('span', { class: 'right', text: job.location })
+                    ]);
+                    entry.appendChild(row);
+                    entry.appendChild(subrow);
+                    entry.appendChild(renderBullets(job.bullets));
+                    list.appendChild(entry);
+                });
+                section.appendChild(list);
+            }
+        }
+
+        function renderProjects(data) {
+            const section = document.getElementById('section-projects');
+            section.appendChild(el('h2', { class: 'section-title', text: 'Projects' }));
+            if (data.projects && data.projects.length > 0) {
+                const list = el('ul', { class: 'entry-list' });
+                data.projects.forEach(proj => {
+                    const entry = el('li', { class: 'entry' });
+                    const row = el('div', { class: 'entry-row project-row' }, [
+                        el('span', {
+                            class: 'left',
+                            html: `<b>${escapeHtml(proj.title)}</b> <span class="sep">|</span> <i>${escapeHtml(proj.tech)}</i>`
+                        }),
+                        el('span', { class: 'right', text: proj.dates })
+                    ]);
+                    entry.appendChild(row);
+                    entry.appendChild(renderBullets(proj.bullets));
+                    list.appendChild(entry);
+                });
+                section.appendChild(list);
+            }
+        }
+
+        function renderSkills(data) {
+            const section = document.getElementById('section-skills');
+            section.appendChild(el('h2', { class: 'section-title', text: 'Technical Skills' }));
+            if (data.skills && data.skills.length > 0) {
+                const block = el('div', { class: 'skills-block' });
+                data.skills.forEach(s => {
+                    block.appendChild(el('div', {
+                        class: 'skill-line',
+                        html: `<b>${escapeHtml(s.category)}:</b> ${escapeHtml(s.items)}`
+                    }));
+                });
+                section.appendChild(block);
+            }
+        }
+
+        function render(data) {
+            document.getElementById('header').innerHTML = '';
+            document.getElementById('section-education').innerHTML = '';
+            document.getElementById('section-experience').innerHTML = '';
+            document.getElementById('section-projects').innerHTML = '';
+            document.getElementById('section-skills').innerHTML = '';
+
+            renderHeader(data);
+            renderEducation(data);
+            renderExperience(data);
+            renderProjects(data);
+            renderSkills(data);
+        }
+
+        window.renderResume = render;
+        render(resumeData);
+    </script>
+
+</body>
+
+</html>
