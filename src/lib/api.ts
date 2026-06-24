@@ -71,6 +71,16 @@ export interface AwardItem extends BaseItem {
 
 export type ResumeItem = EducationItem | ProjectItem | ExperienceItem | CertificationItem | AwardItem;
 
+export interface Resume {
+  id: string;
+  username: string;
+  filename: string;
+  template: string;
+  content: any;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const authService = {
   /**
    * Exchanges the GitHub OAuth temporary code for a session token and user info.
@@ -115,5 +125,43 @@ export const itemService = {
 };
 
 export const resumeService = {
-  // Placeholder for future resume backend integration endpoints
+  /**
+   * Fetches all resumes belonging to the authenticated user.
+   */
+  getResumes: async (): Promise<Resume[]> => {
+    const response = await getWithToken('/api/resume');
+    return response.data;
+  },
+
+  createResume: async (filename: string, template: string): Promise<Resume> => {
+    const response = await postWithToken('/api/resume', {
+      filename,
+      template,
+      content: {},
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
+    return response.data;
+  },
+
+  /**
+   * Updates an existing resume configuration.
+   */
+  updateResume: async (id: string, filename: string, template: string, content?: any): Promise<Resume> => {
+    const response = await putWithToken(`/api/resume/${id}`, {
+      filename,
+      template,
+      content: content || {},
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
+    return response.data;
+  },
+
+  /**
+   * Deletes a resume configuration.
+   */
+  deleteResume: async (id: string): Promise<void> => {
+    await deleteWithToken(`/api/resume/${id}`);
+  }
 };
