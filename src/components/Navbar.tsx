@@ -115,67 +115,88 @@ export default function Navbar({ onSaveSuccess }: NavbarProps) {
           resume<span>in</span>
         </a>
 
-        {user && resumes.length > 0 && (
-          <div className="resume-selector-container" ref={resumeDropdownRef}>
-            <button
-              className="resume-selector-btn"
-              onClick={() => setResumeDropdownOpen(!resumeDropdownOpen)}
-              aria-expanded={resumeDropdownOpen}
-              aria-haspopup="true"
-            >
-              <svg className="resume-selector-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-              </svg>
-              <span className="resume-selector-name">{currentResume?.filename || 'Select Resume'}</span>
-              <svg className={`resume-selector-arrow ${resumeDropdownOpen ? 'open' : ''}`} viewBox="0 0 24 24">
-                <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
+        {user && (
+          resumes.length > 0 ? (
+            <div className="resume-selector-container" ref={resumeDropdownRef}>
+              <button
+                className="resume-selector-btn"
+                onClick={() => setResumeDropdownOpen(!resumeDropdownOpen)}
+                aria-expanded={resumeDropdownOpen}
+                aria-haspopup="true"
+              >
+                <svg className="resume-selector-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                </svg>
+                <span className="resume-selector-name">{currentResume?.filename || 'Select Resume'}</span>
+                <svg className={`resume-selector-arrow ${resumeDropdownOpen ? 'open' : ''}`} viewBox="0 0 24 24">
+                  <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
 
-            {resumeDropdownOpen && (
-              <div className="resume-selector-dropdown">
-                <div className="dropdown-label">Select Resume</div>
-                <div className="resume-list-scrollable">
-                  {resumes.map((resume) => (
-                    <button
-                      key={resume.id}
-                      className={`resume-dropdown-item ${resume.id === selectedResumeId ? 'active' : ''}`}
-                      onClick={() => {
-                        setSelectedResumeId(resume.id);
-                        setResumeDropdownOpen(false);
-                      }}
-                    >
-                      <svg className="resume-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                        <polyline points="14 2 14 8 20 8" />
-                      </svg>
-                      <span className="resume-item-name">{resume.filename}</span>
-                      {resume.id === selectedResumeId && (
-                        <svg className="resume-item-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                          <polyline points="20 6 9 17 4 12" />
+              {resumeDropdownOpen && (
+                <div className="resume-selector-dropdown">
+                  <div className="dropdown-label">Select Resume</div>
+                  <div className="resume-list-scrollable">
+                    {resumes.map((resume) => (
+                      <button
+                        key={resume.id}
+                        className={`resume-dropdown-item ${resume.id === selectedResumeId ? 'active' : ''}`}
+                        onClick={() => {
+                          setSelectedResumeId(resume.id);
+                          setResumeDropdownOpen(false);
+                        }}
+                      >
+                        <svg className="resume-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                          <polyline points="14 2 14 8 20 8" />
                         </svg>
-                      )}
-                    </button>
-                  ))}
+                        <span className="resume-item-name">{resume.filename}</span>
+                        {resume.id === selectedResumeId && (
+                          <svg className="resume-item-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  <hr className="dropdown-divider" />
+                  <button
+                    className="resume-dropdown-item create-new"
+                    onClick={() => {
+                      setIsCreatingResume(true);
+                      setResumeDropdownOpen(false);
+                    }}
+                  >
+                    <svg className="resume-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Create New Resume
+                  </button>
                 </div>
-                <hr className="dropdown-divider" />
-                <button
-                  className="resume-dropdown-item create-new"
-                  onClick={() => {
-                    setIsCreatingResume(true);
-                    setResumeDropdownOpen(false);
-                  }}
-                >
-                  <svg className="resume-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                  </svg>
-                  Create New Resume
-                </button>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          ) : (
+            <button
+              className="resume-selector-btn create-new-btn"
+              onClick={() => setIsCreatingResume(true)}
+              style={{
+                borderColor: 'var(--color-brand-terracotta)',
+                color: 'var(--color-brand-terracotta)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                fontWeight: 700
+              }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '1rem', height: '1rem' }}>
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>Create Resume</span>
+            </button>
+          )
         )}
       </div>
 

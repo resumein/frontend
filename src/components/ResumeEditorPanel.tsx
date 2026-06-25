@@ -32,6 +32,7 @@ export default function ResumeEditorPanel({ section, onClose }: ResumeEditorPane
   const saveActiveContent = useResumeStore((state) => state.saveActiveContent);
   const removeResume = useResumeStore((state) => state.removeResume);
   const setSelectedResumeId = useResumeStore((state) => state.setSelectedResumeId);
+  const setIsCreatingResume = useResumeStore((state) => state.setIsCreatingResume);
 
   const currentResume = resumes.find((r) => r.id === selectedResumeId);
 
@@ -85,6 +86,7 @@ export default function ResumeEditorPanel({ section, onClose }: ResumeEditorPane
         setSelectedResumeId(remainingResumes[0].id);
       } else {
         setSelectedResumeId(null);
+        setIsCreatingResume(true);
       }
       onClose();
     } catch (err) {
