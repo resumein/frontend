@@ -264,6 +264,7 @@ export default function DashboardPage() {
         payload.school = formData.get('school') as string;
         payload.degree = formData.get('degree') as string;
         payload.field = formData.get('field') as string;
+        payload.location = formData.get('location') as string;
 
         const fromVal = formData.get('fromDate') as string;
         payload.fromDate = fromVal ? new Date(fromVal).toISOString() : '';
@@ -280,6 +281,7 @@ export default function DashboardPage() {
       } else if (activeTab === 'projects') {
         payload.name = formData.get('name') as string;
         payload.github = formData.get('github') as string;
+        payload.technologiesUsed = formData.get('technologiesUsed') as string;
 
         const urlVal = formData.get('url') as string;
         if (urlVal) {
@@ -298,6 +300,7 @@ export default function DashboardPage() {
       } else if (activeTab === 'experience') {
         payload.title = formData.get('title') as string;
         payload.company = formData.get('company') as string;
+        payload.location = formData.get('location') as string;
 
         const fromVal = formData.get('fromDate') as string;
         payload.fromDate = fromVal ? new Date(fromVal).toISOString() : '';
