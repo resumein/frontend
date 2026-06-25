@@ -244,10 +244,15 @@ export default function ResumePreview({ onSectionClick, activeSection }: ResumeP
       a { pointer-events: none !important; cursor: default !important; }
       .page-break-spacer { display: block; visibility: hidden; }
       @media print {
-        #page { height: auto !important; padding: 0.5in 0.6in !important; box-sizing: border-box !important; }
-        .page-break-spacer { display: none !important; }
-        /* Native page break for sections pushed to next page in preview */
-        .page-break-before { break-before: page !important; page-break-before: always !important; }
+        /* Lock page to letter size with no browser margins so natural breaks align with our 1056px grid */
+        @page { size: 8.5in 11in; margin: 0; }
+        html, body { margin: 0 !important; padding: 0 !important; }
+        /* Keep #page auto-height so it flows across multiple print pages */
+        #page { height: auto !important; min-height: 0 !important; overflow: visible !important; padding: 0.5in 0.6in !important; box-sizing: border-box !important; }
+        /* KEEP spacers visible so layout matches preview exactly.
+           With @page margin:0, browser breaks at exactly 11in = 1056px,
+           which is where our spacers push each section to start. */
+        .page-break-spacer { display: block !important; visibility: hidden !important; }
         .section-selected-highlight,.section-drag-highlight,${base},${hover} { outline: none !important; outline-offset: 0 !important; background-color: transparent !important; box-shadow: none !important; }
       }
     `;
