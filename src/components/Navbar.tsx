@@ -74,6 +74,16 @@ export default function Navbar({ onSaveSuccess }: NavbarProps) {
     navigate('/');
   };
 
+  const handlePrint = () => {
+    const iframe = document.querySelector('.preview-iframe') as HTMLIFrameElement;
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+    } else {
+      alert('Could not find resume preview to print.');
+    }
+  };
+
   const handleSave = async () => {
     if (!selectedResumeId || !activeContent || !currentResume) return;
     setSavingChanges(true);
@@ -174,6 +184,21 @@ export default function Navbar({ onSaveSuccess }: NavbarProps) {
             disabled={savingChanges}
           >
             {savingChanges ? 'Publishing...' : 'Publish'}
+          </button>
+        )}
+
+        {selectedResumeId && (
+          <button
+            onClick={handlePrint}
+            className="print-btn"
+            title="Print or Save Resume as PDF"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '1rem', height: '1rem' }}>
+              <polyline points="6 9 6 2 18 2 18 9"></polyline>
+              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+              <rect x="6" y="14" width="12" height="8"></rect>
+            </svg>
+            Print
           </button>
         )}
 

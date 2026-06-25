@@ -33,7 +33,9 @@ export default function DashboardPage() {
   // Zustand resumes store state
   const resumes = useResumeStore((state) => state.resumes);
   const setResumes = useResumeStore((state) => state.setResumes);
+  const selectedResumeId = useResumeStore((state) => state.selectedResumeId);
   const setSelectedResumeId = useResumeStore((state) => state.setSelectedResumeId);
+  const currentResume = resumes.find(r => r.id === selectedResumeId);
   const addResume = useResumeStore((state) => state.addResume);
   const setLoadingResumes = useResumeStore((state) => state.setLoading);
   const isCreatingResume = useResumeStore((state) => state.isCreatingResume);
@@ -92,6 +94,18 @@ export default function DashboardPage() {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [isDirty]);
+
+  // Dynamically update page title to show filename - resumein
+  useEffect(() => {
+    if (currentResume && currentResume.filename) {
+      document.title = `${currentResume.filename} - ResumeIn`;
+    } else {
+      document.title = 'Dashboard - ResumeIn';
+    }
+    return () => {
+      document.title = 'ResumeIn';
+    };
+  }, [currentResume]);
 
   // Toast notifications state
   const [toasts, setToasts] = useState<Toast[]>([]);

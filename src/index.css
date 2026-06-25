@@ -1978,6 +1978,31 @@ select.form-input {
   cursor: not-allowed;
 }
 
+.print-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.85rem;
+  background-color: var(--bg-secondary);
+  border: 1.5px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: 2.2rem;
+  outline: none;
+  margin-right: 0.75rem;
+}
+
+.print-btn:hover {
+  background-color: var(--bg-primary);
+  border-color: var(--color-brand-terracotta);
+  color: var(--color-brand-terracotta);
+  transform: translateY(-1px);
+}
+
 /* Panel Dropzone Overlay styles */
 .panel-dropzone {
   display: flex;

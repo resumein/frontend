@@ -103,7 +103,7 @@
     <style>
         @page {
             size: letter;
-            margin: 0.5in;
+            margin: 0;
         }
 
         * {
@@ -130,6 +130,7 @@
 
         a {
             color: #000 !important;
+            text-decoration: none;
         }
 
         #page {
@@ -140,16 +141,29 @@
         }
 
         @media print {
+            html, body {
+                margin: 0;
+                padding: 0;
+                width: 8.5in;
+                height: 11in;
+                overflow: hidden;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
             body {
                 background: #fff;
-                padding: 0;
+                display: block;
             }
 
             #page {
                 box-shadow: none;
-                width: auto;
-                min-height: auto;
-                padding: 0;
+                width: 8.5in;
+                height: 11in;
+                padding: 0.5in 0.6in;
+                margin: 0;
+                border: none;
+                box-sizing: border-box;
             }
         }
 
