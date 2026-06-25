@@ -11,7 +11,6 @@ export default function ResumePreview({ onSectionClick, activeSection }: ResumeP
   const resumes = useResumeStore((state) => state.resumes);
   const selectedResumeId = useResumeStore((state) => state.selectedResumeId);
   const activeContent = useResumeStore((state) => state.activeContent);
-  const setActiveContent = useResumeStore((state) => state.setActiveContent);
   const templateConfig = useResumeStore((state) => state.templateConfig);
   const setTemplateConfig = useResumeStore((state) => state.setTemplateConfig);
 
@@ -51,6 +50,11 @@ export default function ResumePreview({ onSectionClick, activeSection }: ResumeP
     lastDropItemIdRef.current = itemStr;
     lastDropTimeRef.current = now;
 
+    const currentStore = useResumeStore.getState();
+    const activeContent = currentStore.activeContent;
+    const templateConfig = currentStore.templateConfig;
+    const setActiveContent = currentStore.setActiveContent;
+
     const section = templateConfig?.sections.find(s =>
       s.id === item.type || (s.dragTypes && s.dragTypes.includes(item.type))
     );
@@ -77,12 +81,30 @@ export default function ResumePreview({ onSectionClick, activeSection }: ResumeP
       return;
     }
 
-    currentContent[targetKey] = [...currentList, mappedData];
+    const isEmptyItem = (obj: any) => {
+      if (!obj || typeof obj !== 'object') return true;
+      return Object.keys(obj).every(k => {
+        const val = obj[k];
+        if (!val) return true;
+        if (Array.isArray(val)) {
+          return val.length === 0 || (val.length === 1 && !val[0]);
+        }
+        return false;
+      });
+    };
+
+    if (currentList.length === 1 && isEmptyItem(currentList[0])) {
+      currentContent[targetKey] = [mappedData];
+    } else {
+      currentContent[targetKey] = [...currentList, mappedData];
+    }
+
     setActiveContent(currentContent);
   };
 
   const setSectionHighlight = (typeOrId: string | null) => {
     const doc = iframeRef.current?.contentDocument;
+    const templateConfig = useResumeStore.getState().templateConfig;
     if (!doc || !templateConfig) return;
 
     templateConfig.sections.forEach((sec) => {
@@ -464,9 +486,9 @@ export default function ResumePreview({ onSectionClick, activeSection }: ResumeP
             </svg>
             Edit
           </button>
- 
+
           <span style={{ width: '1px', height: '1rem', backgroundColor: 'var(--border-color)', margin: '0 0.2rem' }}></span>
- 
+
           <button
             onClick={() => onSectionClick('layout')}
             className="zoom-btn"
@@ -496,7 +518,7 @@ export default function ResumePreview({ onSectionClick, activeSection }: ResumeP
             </svg>
             Layout
           </button>
-          
+
           <span style={{ width: '1px', height: '1rem', backgroundColor: 'var(--border-color)', margin: '0 0.2rem' }}></span>
 
           <button onClick={handleZoomOut} className="zoom-btn" title="Zoom Out">

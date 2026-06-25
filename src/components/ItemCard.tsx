@@ -87,7 +87,7 @@ export default function ItemCard({ item, onEdit, onDelete, formatDate, isUsed = 
           <div className="item-card-title">{(item as ProjectItem).name}</div>
           <p className="item-card-description">{(item as ProjectItem).description}</p>
           {(item as ProjectItem).technologiesUsed && (
-            <div className="item-card-badge" style={{ marginTop: '0.2rem', marginBottom: '0.4rem', display: 'inline-block' }}>
+            <div className="item-card-tech">
               {(item as ProjectItem).technologiesUsed}
             </div>
           )}

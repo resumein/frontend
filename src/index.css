@@ -1148,6 +1148,28 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
+.item-card-tech {
+  align-self: flex-start;
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  background-color: #E2E8F0;
+  color: #475569;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  display: inline-block;
+  margin-top: 0.2rem;
+  margin-bottom: 0.4rem;
+  max-width: 100%;
+  word-break: break-word;
+}
+
+.dark .item-card-tech {
+  background-color: #334155;
+  color: #CBD5E1;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
 .item-card-actions {
   position: absolute;
   bottom: 0.95rem;

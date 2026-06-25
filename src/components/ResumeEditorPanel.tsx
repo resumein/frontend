@@ -138,7 +138,24 @@ export default function ResumeEditorPanel({ section, onClose }: ResumeEditorPane
       );
       if (isDuplicate) return;
 
-      currentContent[section] = [...currentList, mappedData];
+      const isEmptyItem = (obj: any) => {
+        if (!obj || typeof obj !== 'object') return true;
+        return Object.keys(obj).every(k => {
+          const val = obj[k];
+          if (!val) return true;
+          if (Array.isArray(val)) {
+            return val.length === 0 || (val.length === 1 && !val[0]);
+          }
+          return false;
+        });
+      };
+
+      if (currentList.length === 1 && isEmptyItem(currentList[0])) {
+        currentContent[section] = [mappedData];
+      } else {
+        currentContent[section] = [...currentList, mappedData];
+      }
+
       setActiveContent(currentContent);
     } catch (err) {
       console.error('Failed to handle drop in editor panel:', err);
@@ -638,7 +655,11 @@ export default function ResumeEditorPanel({ section, onClose }: ResumeEditorPane
                       <p>Drag & drop credentials here</p>
                     </div>
                   ) : (
-                    <div>
+                    <div
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                    >
                       {(() => {
                         const rawList = activeContent[sectionConfig.id] || [];
                         const list = rawList.length === 0 ? [{}] : rawList;
@@ -732,6 +753,37 @@ export default function ResumeEditorPanel({ section, onClose }: ResumeEditorPane
                         >
                           + Add Item
                         </button>
+                      )}
+
+                      {isDashboardItemSection(sectionConfig.id) && (
+                        <div
+                          className={`panel-dropzone-mini ${dragOver ? 'dragover' : ''}`}
+                          onDragOver={handleDragOver}
+                          onDragLeave={handleDragLeave}
+                          onDrop={handleDrop}
+                          style={{
+                            border: '1.5px dashed var(--border-color)',
+                            borderRadius: '6px',
+                            padding: '0.8rem',
+                            textAlign: 'center',
+                            cursor: 'pointer',
+                            marginTop: '1.5rem',
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            fontSize: '0.75rem',
+                            color: 'var(--text-secondary)',
+                            transition: 'all 0.2s',
+                            backgroundColor: dragOver ? 'rgba(249, 115, 22, 0.05)' : 'transparent',
+                            borderColor: dragOver ? 'var(--color-brand-terracotta)' : 'var(--border-color)'
+                          }}
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ width: '0.9rem', height: '0.9rem', color: 'var(--color-brand-terracotta)' }}>
+                            <path d="M12 5v14M5 12h14" />
+                          </svg>
+                          <span>Drag & drop card here to add another</span>
+                        </div>
                       )}
                     </div>
                   )}
