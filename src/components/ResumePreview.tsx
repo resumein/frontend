@@ -190,11 +190,14 @@ export default function ResumePreview({ onSectionClick, activeSection }: ResumeP
         const stripped = text.replace('render(resumeData);', '');
         setHtmlContent(stripped);
 
-        let parsed = parseTemplateConfig(text);
-        if (!parsed) {
-          parsed = DEFAULT_TEMPLATE_CONFIG;
+        const store = useResumeStore.getState();
+        if (!store.templateConfig) {
+          let parsed = parseTemplateConfig(text);
+          if (!parsed) {
+            parsed = DEFAULT_TEMPLATE_CONFIG;
+          }
+          setTemplateConfig(parsed);
         }
-        setTemplateConfig(parsed);
         setLoading(false);
       })
       .catch((err) => {

@@ -123,6 +123,14 @@ export const useResumeStore = create<ResumeState>((set, get) => ({
         }
       }
     });
+    const activeSectionIds = new Set(config.sections.map(s => s.id));
+    const profileFields = new Set(['name', 'phone', 'email', 'links', 'templateConfig']);
+
+    Object.keys(defaultContent).forEach(key => {
+      if (!profileFields.has(key) && !activeSectionIds.has(key)) {
+        delete defaultContent[key];
+      }
+    });
 
     set({ activeContent: defaultContent, originalContent: defaultContent, isDirty: false });
   },
@@ -196,9 +204,21 @@ export const useResumeStore = create<ResumeState>((set, get) => ({
       ...content
     };
 
-    set({ 
-      activeContent: defaultContent, 
-      originalContent: defaultContent, 
+    const tConfig = content.templateConfig;
+    if (tConfig && Array.isArray(tConfig.sections)) {
+      const activeSectionIds = new Set(tConfig.sections.map((s: any) => s.id));
+      const profileFields = new Set(['name', 'phone', 'email', 'links', 'templateConfig']);
+
+      Object.keys(defaultContent).forEach(key => {
+        if (!profileFields.has(key) && !activeSectionIds.has(key)) {
+          delete (defaultContent as any)[key];
+        }
+      });
+    }
+
+    set({
+      activeContent: defaultContent,
+      originalContent: defaultContent,
       isDirty: false,
       templateConfig: content.templateConfig || null
     });

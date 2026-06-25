@@ -3,6 +3,7 @@ import { useResumeStore } from '../store/resumeStore';
 import { mapItemToSectionData, DEFAULT_TEMPLATE_CONFIG } from '../lib/templateUtils';
 import { resumeService } from '../lib/api';
 import { getErrorMessage } from '../lib/network';
+import { SKILLS_DATABASE } from '../lib/skillsData';
 
 export const mapItemToResumeSchema = (item: any) => {
   const section = DEFAULT_TEMPLATE_CONFIG.sections.find(s => 
@@ -95,6 +96,102 @@ export default function ResumeEditorPanel({ section, onClose }: ResumeEditorPane
     } finally {
       setDeletingResume(false);
     }
+  };
+
+  const handleDetectSkills = () => {
+    if (!activeContent) return;
+    const projects = activeContent.projects || [];
+    if (projects.length === 0) return;
+
+    const matched: Record<string, Set<string>> = {};
+    Object.keys(SKILLS_DATABASE).forEach(cat => {
+      matched[cat] = new Set<string>();
+    });
+    matched["Others"] = new Set<string>();
+
+    const matchSkillToCategory = (tech: string): { category: string; matchedName: string } | null => {
+      const cleanTech = tech.trim().toLowerCase();
+      if (!cleanTech) return null;
+
+      for (const category of Object.keys(SKILLS_DATABASE)) {
+        for (const item of SKILLS_DATABASE[category]) {
+          const cleanItem = item.trim().toLowerCase();
+          
+          // Exact match
+          if (cleanItem === cleanTech) {
+            return { category, matchedName: item };
+          }
+          
+          // Check with parentheses stripped
+          const parenRegex = /\(([^)]+)\)/;
+          const match = item.match(parenRegex);
+          if (match) {
+            const inside = match[1].trim().toLowerCase();
+            const outside = item.replace(parenRegex, '').trim().toLowerCase();
+            if (cleanTech === inside || cleanTech === outside) {
+              return { category, matchedName: item };
+            }
+          }
+
+          // Substring matches for common techs:
+          if (cleanTech === 'node' && cleanItem === 'node.js') {
+            return { category, matchedName: item };
+          }
+          if (cleanTech === 'next' && cleanItem === 'next.js') {
+            return { category, matchedName: item };
+          }
+          if (cleanTech === 'vue' && cleanItem === 'vue.js') {
+            return { category, matchedName: item };
+          }
+          if (cleanTech === 'reactjs' && cleanItem === 'react') {
+            return { category, matchedName: item };
+          }
+
+          // Standard contains
+          if (cleanItem.includes(cleanTech) && cleanTech.length > 2) {
+            return { category, matchedName: item };
+          }
+          if (cleanTech.includes(cleanItem) && cleanItem.length > 2) {
+            return { category, matchedName: item };
+          }
+        }
+      }
+      return null;
+    };
+
+    projects.forEach((proj: any) => {
+      const techStr = proj.tech || proj.technologiesUsed || '';
+      if (!techStr) return;
+
+      const parts = techStr.split(/[,;/]+/);
+      parts.forEach((p: string) => {
+        const cleaned = p.trim();
+        if (!cleaned) return;
+
+        const match = matchSkillToCategory(cleaned);
+        if (match) {
+          matched[match.category].add(match.matchedName);
+        } else {
+          // Capitalize first letter of unmatched tech and add to "Others"
+          const capitalized = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+          matched["Others"].add(capitalized);
+        }
+      });
+    });
+
+    const newSkills = [...Object.keys(SKILLS_DATABASE), "Others"]
+      .filter(cat => matched[cat] && matched[cat].size > 0)
+      .map(cat => ({
+        category: cat,
+        items: Array.from(matched[cat]).join(', ')
+      }));
+
+    if (newSkills.length === 0) return;
+
+    setActiveContent({
+      ...activeContent,
+      skills: newSkills
+    });
   };
 
   const [dragOver, setDragOver] = useState(false);
@@ -264,13 +361,17 @@ export default function ResumeEditorPanel({ section, onClose }: ResumeEditorPane
 
   const deleteSection = (sectionId: string) => {
     if (sectionId === 'profile') return;
-    const sections = templateConfig.sections.filter(s => s.id !== sectionId);
+    const store = useResumeStore.getState();
+    if (!store.templateConfig) return;
+    const sections = store.templateConfig.sections.filter(s => s.id !== sectionId);
+    const newConfig = { ...store.templateConfig, sections };
     
-    const currentContent = { ...activeContent };
+    const currentContent = { ...store.activeContent };
     delete currentContent[sectionId];
+    currentContent.templateConfig = newConfig;
     
-    updateTemplateConfig({ ...templateConfig, sections });
-    setActiveContent(currentContent);
+    store.updateTemplateConfig(newConfig);
+    store.setActiveContent(currentContent);
     onClose();
   };
 
@@ -281,7 +382,9 @@ export default function ResumeEditorPanel({ section, onClose }: ResumeEditorPane
     const title = newSecTitle.trim();
     const id = title.toLowerCase().replace(/[^a-z0-9_]/g, '_');
     
-    if (templateConfig.sections.some(s => s.id === id)) {
+    const store = useResumeStore.getState();
+    if (!store.templateConfig) return;
+    if (store.templateConfig.sections.some(s => s.id === id)) {
       alert('A section with this name already exists.');
       return;
     }
@@ -302,14 +405,19 @@ export default function ResumeEditorPanel({ section, onClose }: ResumeEditorPane
       dragTypes: [newSecAcceptType]
     };
 
-    const sections = [...templateConfig.sections, newSection];
-    updateTemplateConfig({ ...templateConfig, sections });
+    const newConfig = {
+      ...store.templateConfig,
+      sections: [...store.templateConfig.sections, newSection]
+    };
 
-    const currentContent = { ...activeContent };
+    const currentContent = { ...store.activeContent };
     if (currentContent[id] === undefined) {
       currentContent[id] = [];
     }
-    setActiveContent(currentContent);
+    currentContent.templateConfig = newConfig;
+
+    store.updateTemplateConfig(newConfig);
+    store.setActiveContent(currentContent);
     
     setNewSecTitle('');
   };
@@ -515,7 +623,7 @@ export default function ResumeEditorPanel({ section, onClose }: ResumeEditorPane
                 <button
                   type="submit"
                   style={{
-                    backgroundColor: 'var(--accent-color)',
+                    backgroundColor: 'var(--color-brand-terracotta)',
                     color: '#ffffff',
                     border: 'none',
                     padding: '0.6rem 1rem',
@@ -523,9 +631,11 @@ export default function ResumeEditorPanel({ section, onClose }: ResumeEditorPane
                     fontWeight: 700,
                     fontSize: '0.8rem',
                     cursor: 'pointer',
-                    transition: 'opacity 0.2s',
+                    transition: 'all 0.2s ease',
                     marginTop: '0.25rem'
                   }}
+                  onMouseOver={(e) => (e.currentTarget.style.filter = 'brightness(0.95)')}
+                  onMouseOut={(e) => (e.currentTarget.style.filter = 'none')}
                 >
                   Create Custom Section
                 </button>
@@ -594,6 +704,33 @@ export default function ResumeEditorPanel({ section, onClose }: ResumeEditorPane
           ) : sectionConfig ? (
             /* Section Fields Editor View */
             <div className="editor-group">
+              {sectionConfig.id === 'skills' && (
+                <button
+                  onClick={handleDetectSkills}
+                  className="detect-skills-btn"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    padding: '0.35rem 0.65rem',
+                    marginBottom: '1rem',
+                    backgroundColor: 'rgba(227, 100, 20, 0.08)',
+                    border: '1px solid var(--color-brand-terracotta)',
+                    color: 'var(--color-brand-terracotta)',
+                    fontWeight: 600,
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '0.75rem',
+                    transition: 'all 0.2s ease',
+                  }}
+                  title="Automatically categorize and populate skills from your projects"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ width: '0.8rem', height: '0.8rem' }}>
+                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                  </svg>
+                  Auto-Detect Skills
+                </button>
+              )}
               {sectionConfig.type === 'profile' ? (
                 <div>
                   {sectionConfig.fields.map((field) => {
