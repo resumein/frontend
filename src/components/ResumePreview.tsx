@@ -212,7 +212,7 @@ export default function ResumePreview({ onSectionClick, activeSection }: ResumeP
 
     const runRenderOnly = () => {
       if (win && typeof win.renderResume === 'function') {
-        const enriched = getFallbackRenderData(activeContent, templateConfig);
+        const enriched = getFallbackRenderData(activeContent);
         win.renderResume({
           ...enriched,
           templateConfig
