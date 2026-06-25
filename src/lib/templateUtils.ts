@@ -142,8 +142,8 @@ export const mapItemToSectionData = (item: any, section: TemplateSection) => {
     return fromLabel ? `${fromLabel} -- ${toLabel}` : '';
   };
 
-  const formattedDates = item.fromDate || item.toDate 
-    ? formatDates(item.fromDate, item.toDate) 
+  const formattedDates = item.fromDate || item.toDate
+    ? formatDates(item.fromDate, item.toDate)
     : (item.completedOn ? formatDateLabel(item.completedOn) : (item.date ? formatDateLabel(item.date) : ''));
 
   const enrichedItem = {
@@ -165,7 +165,7 @@ export const mapItemToSectionData = (item: any, section: TemplateSection) => {
         }
       }
     }
-    
+
     if (val === undefined) {
       val = field.type === 'bullets' ? [''] : '';
     } else {
@@ -179,6 +179,6 @@ export const mapItemToSectionData = (item: any, section: TemplateSection) => {
   return data;
 };
 
-export const getFallbackRenderData = (activeContent: any, config: TemplateConfig | null): any => {
+export const getFallbackRenderData = (activeContent: any): any => {
   return activeContent || {};
 };
