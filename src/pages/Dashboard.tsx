@@ -409,10 +409,11 @@ export default function DashboardPage() {
     const formData = new FormData(form);
     const filename = formData.get('filename') as string;
     const template = formData.get('template') as string;
+    const jobDescription = formData.get('jobDescription') as string;
 
     try {
       setCreatingResumeLoader(true);
-      const newResume = await resumeService.createResume(filename, template);
+      const newResume = await resumeService.createResume(filename, template, jobDescription || undefined);
       addResume(newResume);
       setSelectedResumeId(newResume.id);
       setIsCreatingResume(false);

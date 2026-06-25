@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useResumeStore } from '../store/resumeStore';
 import { mapItemToSectionData, DEFAULT_TEMPLATE_CONFIG } from '../lib/templateUtils';
+import { resumeService } from '../lib/api';
 
 export const mapItemToResumeSchema = (item: any) => {
   const section = DEFAULT_TEMPLATE_CONFIG.sections.find(s => 
@@ -23,6 +24,75 @@ export default function ResumeEditorPanel({ section, onClose }: ResumeEditorPane
   const setActiveContent = useResumeStore((state) => state.setActiveContent);
   const templateConfig = useResumeStore((state) => state.templateConfig);
   const updateTemplateConfig = useResumeStore((state) => state.updateTemplateConfig);
+
+  // Resume store states for resume details editing
+  const resumes = useResumeStore((state) => state.resumes);
+  const selectedResumeId = useResumeStore((state) => state.selectedResumeId);
+  const saveActiveContent = useResumeStore((state) => state.saveActiveContent);
+  const removeResume = useResumeStore((state) => state.removeResume);
+  const setSelectedResumeId = useResumeStore((state) => state.setSelectedResumeId);
+
+  const currentResume = resumes.find((r) => r.id === selectedResumeId);
+
+  // Local state for editing filename and job description
+  const [editFilename, setEditFilename] = useState('');
+  const [editJobDescription, setEditJobDescription] = useState('');
+  const [savingDetails, setSavingDetails] = useState(false);
+  const [deletingResume, setDeletingResume] = useState(false);
+
+  useEffect(() => {
+    if (section === 'details' && currentResume) {
+      setEditFilename(currentResume.filename || '');
+      setEditJobDescription(currentResume.jobDescription || '');
+    }
+  }, [section, selectedResumeId, currentResume]);
+
+  const handleSaveDetails = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedResumeId || !currentResume) return;
+    setSavingDetails(true);
+    try {
+      const updated = await resumeService.updateResume(
+        selectedResumeId,
+        editFilename,
+        currentResume.template,
+        activeContent,
+        editJobDescription
+      );
+      saveActiveContent(updated);
+      alert('Resume details saved successfully!');
+    } catch (err) {
+      console.error('Failed to save resume details:', err);
+      alert('Failed to save resume details.');
+    } finally {
+      setSavingDetails(false);
+    }
+  };
+
+  const handleDeleteResume = async () => {
+    if (!selectedResumeId) return;
+    const confirmDelete = window.confirm('Are you sure you want to delete this resume? This action cannot be undone.');
+    if (!confirmDelete) return;
+
+    setDeletingResume(true);
+    try {
+      await resumeService.deleteResume(selectedResumeId);
+      removeResume(selectedResumeId);
+      
+      const remainingResumes = resumes.filter(r => r.id !== selectedResumeId);
+      if (remainingResumes.length > 0) {
+        setSelectedResumeId(remainingResumes[0].id);
+      } else {
+        setSelectedResumeId(null);
+      }
+      onClose();
+    } catch (err) {
+      console.error('Failed to delete resume:', err);
+      alert('Failed to delete resume.');
+    } finally {
+      setDeletingResume(false);
+    }
+  };
 
   const [dragOver, setDragOver] = useState(false);
   const [draggedSectionIndex, setDraggedSectionIndex] = useState<number | null>(null);
@@ -75,10 +145,11 @@ export default function ResumeEditorPanel({ section, onClose }: ResumeEditorPane
   if (!activeContent || !section || !templateConfig) return null;
 
   const sectionConfig = templateConfig.sections.find(s => s.id === section);
-  if (!sectionConfig && section !== 'layout') return null;
+  if (!sectionConfig && section !== 'layout' && section !== 'details') return null;
 
   const getSectionTitle = () => {
     if (section === 'layout') return 'Manage Layout';
+    if (section === 'details') return 'Edit Resume Details';
     return sectionConfig?.title || 'Editor';
   };
 
@@ -249,9 +320,9 @@ export default function ResumeEditorPanel({ section, onClose }: ResumeEditorPane
 
         <div
           className="panel-body"
-          onDragOver={section !== 'layout' ? handleDragOver : undefined}
-          onDragLeave={section !== 'layout' ? handleDragLeave : undefined}
-          onDrop={section !== 'layout' ? handleDrop : undefined}
+          onDragOver={section !== 'layout' && section !== 'details' ? handleDragOver : undefined}
+          onDragLeave={section !== 'layout' && section !== 'details' ? handleDragLeave : undefined}
+          onDrop={section !== 'layout' && section !== 'details' ? handleDrop : undefined}
         >
           {section === 'layout' ? (
             /* Layout Manager Panel View */
@@ -423,6 +494,95 @@ export default function ResumeEditorPanel({ section, onClose }: ResumeEditorPane
                   Create Custom Section
                 </button>
               </form>
+            </div>
+          ) : section === 'details' ? (
+            <div className="details-editor-container" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <form onSubmit={handleSaveDetails} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <div className="form-item">
+                  <label htmlFor="edit-filename">Resume Filename *</label>
+                  <input
+                    id="edit-filename"
+                    type="text"
+                    value={editFilename}
+                    onChange={(e) => setEditFilename(e.target.value)}
+                    placeholder="e.g. Software Engineer Resume 2026"
+                    required
+                  />
+                </div>
+
+                <div className="form-item">
+                  <label htmlFor="edit-job-description" style={{ fontSize: '0.75rem', fontWeight: 700 }}>Job Description</label>
+                  <textarea
+                    id="edit-job-description"
+                    value={editJobDescription}
+                    onChange={(e) => setEditJobDescription(e.target.value)}
+                    placeholder="Paste the target job description here..."
+                    style={{
+                      minHeight: '220px',
+                      resize: 'vertical',
+                      fontFamily: 'inherit',
+                      padding: '0.65rem',
+                      fontSize: '0.85rem',
+                      width: '100%',
+                      borderRadius: '6px',
+                      backgroundColor: 'var(--bg-secondary)',
+                      border: '1px solid var(--border-color)',
+                      color: 'var(--text-primary)',
+                      outline: 'none',
+                      lineHeight: '1.4'
+                    }}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={savingDetails}
+                  style={{
+                    backgroundColor: 'var(--color-brand-terracotta)',
+                    color: '#ffffff',
+                    border: 'none',
+                    padding: '0.75rem 1rem',
+                    borderRadius: '8px',
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    transition: 'opacity 0.2s',
+                    width: '100%',
+                    marginTop: '0.5rem'
+                  }}
+                >
+                  {savingDetails ? 'Saving...' : 'Save Changes'}
+                </button>
+              </form>
+
+              <div style={{ marginTop: '3rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-color)' }}>
+                <button
+                  onClick={handleDeleteResume}
+                  disabled={deletingResume}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                    color: '#ef4444',
+                    border: '1.5px solid rgba(239, 68, 68, 0.15)',
+                    padding: '0.75rem 1.25rem',
+                    borderRadius: '8px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    transition: 'all 0.2s ease',
+                    width: '100%',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ width: '1rem', height: '1rem' }}>
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                  {deletingResume ? 'Deleting...' : 'Delete Resume File'}
+                </button>
+              </div>
             </div>
           ) : sectionConfig ? (
             /* Section Fields Editor View */

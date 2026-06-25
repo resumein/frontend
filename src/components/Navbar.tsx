@@ -92,7 +92,8 @@ export default function Navbar({ onSaveSuccess }: NavbarProps) {
         selectedResumeId,
         currentResume.filename,
         currentResume.template,
-        activeContent
+        activeContent,
+        currentResume.jobDescription
       );
       saveActiveContent(updated);
       if (onSaveSuccess) {

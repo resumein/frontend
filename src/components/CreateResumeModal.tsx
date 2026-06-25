@@ -59,6 +59,23 @@ export default function CreateResumeModal({
               </select>
             </div>
 
+            <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+              <label className="form-label" htmlFor="jobDescription">Job Description</label>
+              <textarea 
+                className="form-input" 
+                id="jobDescription" 
+                name="jobDescription" 
+                placeholder="Paste the target job description here..."
+                style={{ 
+                  minHeight: '120px', 
+                  resize: 'vertical',
+                  fontFamily: 'inherit',
+                  padding: '0.6rem',
+                  fontSize: '0.85rem'
+                }}
+              />
+            </div>
+
             <div className="form-actions" style={{ marginTop: '1.5rem' }}>
               {hasResumes && (
                 <button className="btn-form-cancel" type="button" onClick={onClose}>

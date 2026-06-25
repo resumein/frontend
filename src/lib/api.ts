@@ -80,6 +80,7 @@ export interface Resume {
   filename: string;
   template: string;
   content: any;
+  jobDescription?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -136,11 +137,12 @@ export const resumeService = {
     return response.data;
   },
 
-  createResume: async (filename: string, template: string): Promise<Resume> => {
+  createResume: async (filename: string, template: string, jobDescription?: string): Promise<Resume> => {
     const response = await postWithToken('/api/resume', {
       filename,
       template,
       content: {},
+      jobDescription,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     });
@@ -150,11 +152,12 @@ export const resumeService = {
   /**
    * Updates an existing resume configuration.
    */
-  updateResume: async (id: string, filename: string, template: string, content?: any): Promise<Resume> => {
+  updateResume: async (id: string, filename: string, template: string, content?: any, jobDescription?: string): Promise<Resume> => {
     const response = await putWithToken(`/api/resume/${id}`, {
       filename,
       template,
       content: content || {},
+      jobDescription,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     });
