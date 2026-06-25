@@ -27,6 +27,7 @@ export interface EducationItem extends BaseItem {
   fromDate: string;
   toDate?: string;
   grade?: string;
+  location?: string;
 }
 
 export interface ProjectItem extends BaseItem {
@@ -37,6 +38,7 @@ export interface ProjectItem extends BaseItem {
   description: string;
   fromDate: string;
   toDate?: string;
+  technologiesUsed?: string;
 }
 
 export interface ExperienceItem extends BaseItem {
@@ -47,6 +49,7 @@ export interface ExperienceItem extends BaseItem {
   toDate?: string;
   description?: string;
   role?: string[];
+  location?: string;
 }
 
 export interface CertificationItem extends BaseItem {

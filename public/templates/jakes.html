@@ -51,12 +51,38 @@
           "title": "Projects",
           "selector": "#section-projects",
           "type": "projects",
-          "dragTypes": ["project", "certification", "award"],
+          "dragTypes": ["project"],
           "fields": [
             { "name": "title", "label": "Project Title", "type": "text", "placeholder": "Gitlytics", "fromKey": ["title", "name"] },
-            { "name": "tech", "label": "Technologies Used", "type": "text", "placeholder": "Python, Flask, React, Docker", "fromKey": ["tech", "platform", "issuer"] },
+            { "name": "tech", "label": "Technologies Used", "type": "text", "placeholder": "Python, Flask, React, Docker", "fromKey": ["technologiesUsed", "tech", "platform", "issuer"] },
             { "name": "dates", "label": "Dates / Duration", "type": "text", "placeholder": "June 2020 -- Present", "fromKey": ["formattedDates"] },
             { "name": "bullets", "label": "Bullet Points", "type": "bullets", "placeholder": "Visualized GitHub data...", "fromKey": ["bullets", "role", "description"] }
+          ]
+        },
+        {
+          "id": "certifications",
+          "title": "Certifications",
+          "selector": "#section-certifications",
+          "type": "projects",
+          "dragTypes": ["certification"],
+          "fields": [
+            { "name": "title", "label": "Certification Title", "type": "text", "placeholder": "AWS Cloud Practitioner", "fromKey": ["title", "name"] },
+            { "name": "tech", "label": "Platform / Issuer", "type": "text", "placeholder": "Amazon Web Services", "fromKey": ["tech", "platform", "issuer"] },
+            { "name": "dates", "label": "Dates / Duration", "type": "text", "placeholder": "June 2020", "fromKey": ["formattedDates"] },
+            { "name": "bullets", "label": "Description", "type": "bullets", "placeholder": "Learned about cloud architecture...", "fromKey": ["bullets", "role", "description"] }
+          ]
+        },
+        {
+          "id": "awards",
+          "title": "Awards",
+          "selector": "#section-awards",
+          "type": "projects",
+          "dragTypes": ["award"],
+          "fields": [
+            { "name": "title", "label": "Award Title", "type": "text", "placeholder": "First Place Winner", "fromKey": ["title", "name"] },
+            { "name": "tech", "label": "Organiser / Issuer", "type": "text", "placeholder": "Texas Hackathon", "fromKey": ["tech", "platform", "issuer"] },
+            { "name": "dates", "label": "Dates / Duration", "type": "text", "placeholder": "June 2020", "fromKey": ["formattedDates"] },
+            { "name": "bullets", "label": "Description", "type": "bullets", "placeholder": "Awarded for best AI project...", "fromKey": ["bullets", "role", "description"] }
           ]
         },
         {
@@ -260,6 +286,8 @@
         <section id="section-education"></section>
         <section id="section-experience"></section>
         <section id="section-projects"></section>
+        <section id="section-certifications"></section>
+        <section id="section-awards"></section>
         <section id="section-skills"></section>
     </div>
 
@@ -282,6 +310,12 @@
 
             // ---- Projects ----
             projects: [],
+
+            // ---- Certifications ----
+            certifications: [],
+
+            // ---- Awards ----
+            awards: [],
 
             // ---- Technical Skills ----
             skills: []
@@ -401,6 +435,7 @@
 
         function renderSkills(data) {
             const section = document.getElementById('section-skills');
+            if (!section) return;
             section.appendChild(el('h2', { class: 'section-title', text: 'Technical Skills' }));
             if (data.skills && data.skills.length > 0) {
                 const block = el('div', { class: 'skills-block' });
@@ -414,24 +449,163 @@
             }
         }
 
+        function renderCertifications(data) {
+            const section = document.getElementById('section-certifications');
+            if (!section) return;
+            section.appendChild(el('h2', { class: 'section-title', text: 'Certifications' }));
+            if (data.certifications && data.certifications.length > 0) {
+                const list = el('ul', { class: 'entry-list' });
+                data.certifications.forEach(cert => {
+                    const entry = el('li', { class: 'entry' });
+                    const row = el('div', { class: 'entry-row project-row' }, [
+                        el('span', {
+                            class: 'left',
+                            html: `<b>${escapeHtml(cert.title)}</b> <span class="sep">|</span> <i>${escapeHtml(cert.tech)}</i>`
+                        }),
+                        el('span', { class: 'right', text: cert.dates })
+                    ]);
+                    entry.appendChild(row);
+                    entry.appendChild(renderBullets(cert.bullets));
+                    list.appendChild(entry);
+                });
+                section.appendChild(list);
+            }
+        }
+
+        function renderAwards(data) {
+            const section = document.getElementById('section-awards');
+            if (!section) return;
+            section.appendChild(el('h2', { class: 'section-title', text: 'Awards & Honors' }));
+            if (data.awards && data.awards.length > 0) {
+                const list = el('ul', { class: 'entry-list' });
+                data.awards.forEach(aw => {
+                    const entry = el('li', { class: 'entry' });
+                    const row = el('div', { class: 'entry-row project-row' }, [
+                        el('span', {
+                            class: 'left',
+                            html: `<b>${escapeHtml(aw.title)}</b> <span class="sep">|</span> <i>${escapeHtml(aw.tech)}</i>`
+                        }),
+                        el('span', { class: 'right', text: aw.dates })
+                    ]);
+                    entry.appendChild(row);
+                    entry.appendChild(renderBullets(aw.bullets));
+                    list.appendChild(entry);
+                });
+                section.appendChild(list);
+            }
+        }
+
+        function renderCustomSection(data, sec) {
+            const section = document.querySelector(sec.selector);
+            if (!section) return;
+            section.appendChild(el('h2', { class: 'section-title', text: sec.title }));
+            const items = data[sec.id] || [];
+            if (items.length > 0) {
+                const list = el('ul', { class: 'entry-list' });
+                items.forEach(item => {
+                    const entry = el('li', { class: 'entry' });
+                    const titleVal = item.title || item.name || '';
+                    const techVal = item.tech || item.category || '';
+                    const datesVal = item.dates || item.formattedDates || '';
+
+                    const row = el('div', { class: 'entry-row project-row' }, [
+                        el('span', {
+                            class: 'left',
+                            html: `<b>${escapeHtml(titleVal)}</b>` + (techVal ? ` <span class="sep">|</span> <i>${escapeHtml(techVal)}</i>` : '')
+                        }),
+                        el('span', { class: 'right', text: datesVal })
+                    ]);
+                    entry.appendChild(row);
+                    if (item.bullets && item.bullets.length > 0) {
+                        entry.appendChild(renderBullets(item.bullets));
+                    }
+                    list.appendChild(entry);
+                });
+                section.appendChild(list);
+            }
+        }
+
         function render(data) {
             document.getElementById('header').innerHTML = '';
-            document.getElementById('section-education').innerHTML = '';
-            document.getElementById('section-experience').innerHTML = '';
-            document.getElementById('section-projects').innerHTML = '';
-            document.getElementById('section-skills').innerHTML = '';
+            
+            // Clear sections in templateConfig dynamically
+            if (data.templateConfig && data.templateConfig.sections) {
+                const container = document.getElementById('page');
+                
+                // Hide any section element currently in DOM that is NOT in the current templateConfig
+                if (container) {
+                    const allSections = Array.from(container.querySelectorAll('section'));
+                    allSections.forEach(elSec => {
+                        const isInConfig = data.templateConfig.sections.some(sec => sec.selector === `#${elSec.id}`);
+                        if (!isInConfig) {
+                            elSec.style.display = 'none';
+                        }
+                    });
+                }
+
+                data.templateConfig.sections.forEach(sec => {
+                    if (sec.id !== 'profile') {
+                        let elSec = document.querySelector(sec.selector);
+                        if (!elSec && container && sec.selector.startsWith('#')) {
+                            const elId = sec.selector.substring(1);
+                            elSec = document.createElement('section');
+                            elSec.id = elId;
+                            container.appendChild(elSec);
+                        }
+                        if (elSec) {
+                            elSec.innerHTML = '';
+                            elSec.style.display = 'block';
+                        }
+                    }
+                });
+            } else {
+                const fallbackIds = ['section-education', 'section-experience', 'section-projects', 'section-certifications', 'section-awards', 'section-skills'];
+                fallbackIds.forEach(id => {
+                    const elSec = document.getElementById(id);
+                    if (elSec) {
+                        elSec.innerHTML = '';
+                        elSec.style.display = 'block';
+                    }
+                });
+            }
 
             renderHeader(data);
-            renderEducation(data);
-            renderExperience(data);
-            renderProjects(data);
-            renderSkills(data);
+
+            if (data.templateConfig && data.templateConfig.sections) {
+                data.templateConfig.sections.forEach(sec => {
+                    if (sec.id === 'education') renderEducation(data);
+                    else if (sec.id === 'experience') renderExperience(data);
+                    else if (sec.id === 'projects') renderProjects(data);
+                    else if (sec.id === 'certifications') renderCertifications(data);
+                    else if (sec.id === 'awards') renderAwards(data);
+                    else if (sec.id === 'skills') renderSkills(data);
+                    else if (sec.id !== 'profile') renderCustomSection(data, sec);
+                });
+
+                // Arrange DOM elements order
+                const container = document.getElementById('page');
+                if (container) {
+                    data.templateConfig.sections.forEach(sec => {
+                        if (sec.id !== 'profile') {
+                            const elSec = document.querySelector(sec.selector);
+                            if (elSec && elSec.parentElement === container) {
+                                container.appendChild(elSec);
+                            }
+                        }
+                    });
+                }
+            } else {
+                renderEducation(data);
+                renderExperience(data);
+                renderProjects(data);
+                renderCertifications(data);
+                renderAwards(data);
+                renderSkills(data);
+            }
         }
 
         window.renderResume = render;
         render(resumeData);
     </script>
-
 </body>
-
 </html>

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useResumeStore } from '../store/resumeStore';
-import { parseTemplateConfig, mapItemToSectionData, DEFAULT_TEMPLATE_CONFIG } from '../lib/templateUtils';
+import { parseTemplateConfig, mapItemToSectionData, DEFAULT_TEMPLATE_CONFIG, getFallbackRenderData } from '../lib/templateUtils';
 
 interface ResumePreviewProps {
   onSectionClick: (section: string) => void;
@@ -189,24 +189,20 @@ export default function ResumePreview({ onSectionClick }: ResumePreviewProps) {
 
     const runRenderOnly = () => {
       if (win && typeof win.renderResume === 'function') {
-        win.renderResume(activeContent);
-      }
-    };
+        const enriched = getFallbackRenderData(activeContent, templateConfig);
+        win.renderResume({
+          ...enriched,
+          templateConfig
+        });
 
-    // If the resume has changed, or iframe hasn't been loaded yet, write HTML
-    if (lastLoadedResumeIdRef.current !== selectedResumeId || !iframeLoadedRef.current) {
-      iframeLoadedRef.current = false;
-      lastLoadedResumeIdRef.current = selectedResumeId;
+        // Re-inject dynamic style overrides to match current templateConfig selectors
+        const existingStyle = doc.getElementById('preview-style-overrides');
+        if (existingStyle) {
+          existingStyle.remove();
+        }
 
-      doc.open();
-      doc.write(htmlContent);
-      doc.close();
-
-      const setupListeners = () => {
-        iframeLoadedRef.current = true;
-
-        // Inject helper outline hover styles & disable clicking anchors
         const style = doc.createElement('style');
+        style.id = 'preview-style-overrides';
         const hoverSelectors = templateConfig?.sections.map(s => `${s.selector}:hover`).join(', ') || '';
         const baseSelectors = templateConfig?.sections.map(s => s.selector).join(', ') || '';
 
@@ -234,17 +230,31 @@ export default function ResumePreview({ onSectionClick }: ResumePreviewProps) {
         `;
         doc.head.appendChild(style);
 
-        // Bind sections click dynamically
+        // Re-bind sections click dynamically
         templateConfig?.sections.forEach((section) => {
           const el = doc.querySelector(section.selector);
           if (el) {
-            el.onclick = (e: { preventDefault: () => void; stopPropagation: () => void; }) => {
+            el.onclick = (e: MouseEvent) => {
               e.preventDefault();
               e.stopPropagation();
               onSectionClick(section.id);
             };
           }
         });
+      }
+    };
+
+    // If the resume has changed, or iframe hasn't been loaded yet, write HTML
+    if (lastLoadedResumeIdRef.current !== selectedResumeId || !iframeLoadedRef.current) {
+      iframeLoadedRef.current = false;
+      lastLoadedResumeIdRef.current = selectedResumeId;
+
+      doc.open();
+      doc.write(htmlContent);
+      doc.close();
+
+      const setupListeners = () => {
+        iframeLoadedRef.current = true;
 
         // Drag and drop event listeners inside the iframe document
         doc.body.addEventListener('dragenter', (e: DragEvent) => {
@@ -268,7 +278,7 @@ export default function ResumePreview({ onSectionClick }: ResumePreviewProps) {
         });
         doc.body.addEventListener('drop', (e: DragEvent) => {
           e.preventDefault();
-          e.stopPropagation(); // Stop bubble!
+          e.stopPropagation();
 
           setSectionHighlight(null);
           try {
@@ -283,7 +293,7 @@ export default function ResumePreview({ onSectionClick }: ResumePreviewProps) {
           }
         });
 
-        // Trigger first render
+        // Trigger render
         runRenderOnly();
       };
 
@@ -293,7 +303,6 @@ export default function ResumePreview({ onSectionClick }: ResumePreviewProps) {
         setupListeners();
       }
     } else {
-      // Just re-render updated data! No reload/flash!
       runRenderOnly();
     }
   };
@@ -370,6 +379,38 @@ export default function ResumePreview({ onSectionClick }: ResumePreviewProps) {
       {/* Sticky Floating Zoom Controls at Bottom Right */}
       {!loading && (
         <div className="preview-floating-zoom">
+          <button
+            onClick={() => onSectionClick('layout')}
+            className="zoom-btn"
+            title="Manage Sections Layout"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 'auto',
+              padding: '0 0.5rem 0 0.25rem',
+              borderRadius: '20px',
+              gap: '0.35rem',
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              backgroundColor: 'transparent',
+              color: 'var(--text-primary)',
+              border: 'none',
+              cursor: 'pointer',
+              height: '2rem'
+            }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ width: '0.9rem', height: '0.9rem' }}>
+              <rect x="3" y="3" width="7" height="9" rx="1" />
+              <rect x="14" y="3" width="7" height="5" rx="1" />
+              <rect x="14" y="12" width="7" height="9" rx="1" />
+              <rect x="3" y="16" width="7" height="5" rx="1" />
+            </svg>
+            Layout
+          </button>
+          
+          <span style={{ width: '1px', height: '1rem', backgroundColor: 'var(--border-color)', margin: '0 0.2rem' }}></span>
+
           <button onClick={handleZoomOut} className="zoom-btn" title="Zoom Out">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <line x1="5" y1="12" x2="19" y2="12"></line>

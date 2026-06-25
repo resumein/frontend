@@ -65,12 +65,38 @@ export const DEFAULT_TEMPLATE_CONFIG: TemplateConfig = {
       title: 'Projects',
       selector: '#section-projects',
       type: 'projects',
-      dragTypes: ['project', 'certification', 'award'],
+      dragTypes: ['project'],
       fields: [
         { name: 'title', label: 'Project Title', type: 'text', placeholder: 'Gitlytics', fromKey: ['title', 'name'] },
-        { name: 'tech', label: 'Technologies Used', type: 'text', placeholder: 'Python, Flask, React, Docker', fromKey: ['tech', 'platform', 'issuer'] },
+        { name: 'tech', label: 'Technologies Used', type: 'text', placeholder: 'Python, Flask, React, Docker', fromKey: ['technologiesUsed', 'tech', 'platform', 'issuer'] },
         { name: 'dates', label: 'Dates / Duration', type: 'text', placeholder: 'June 2020 -- Present', fromKey: ['formattedDates'] },
         { name: 'bullets', label: 'Bullet Points', type: 'bullets', placeholder: 'Visualized GitHub data...', fromKey: ['bullets', 'role', 'description'] }
+      ]
+    },
+    {
+      id: 'certifications',
+      title: 'Certifications',
+      selector: '#section-certifications',
+      type: 'projects',
+      dragTypes: ['certification'],
+      fields: [
+        { name: 'title', label: 'Certification Title', type: 'text', placeholder: 'AWS Cloud Practitioner', fromKey: ['title', 'name'] },
+        { name: 'tech', label: 'Platform / Issuer', type: 'text', placeholder: 'Amazon Web Services', fromKey: ['tech', 'platform', 'issuer'] },
+        { name: 'dates', label: 'Dates / Duration', type: 'text', placeholder: 'June 2020', fromKey: ['formattedDates'] },
+        { name: 'bullets', label: 'Description', type: 'bullets', placeholder: 'Learned about cloud architecture...', fromKey: ['bullets', 'role', 'description'] }
+      ]
+    },
+    {
+      id: 'awards',
+      title: 'Awards',
+      selector: '#section-awards',
+      type: 'projects',
+      dragTypes: ['award'],
+      fields: [
+        { name: 'title', label: 'Award Title', type: 'text', placeholder: 'First Place Winner', fromKey: ['title', 'name'] },
+        { name: 'tech', label: 'Organiser / Issuer', type: 'text', placeholder: 'Texas Hackathon', fromKey: ['tech', 'platform', 'issuer'] },
+        { name: 'dates', label: 'Dates / Duration', type: 'text', placeholder: 'June 2020', fromKey: ['formattedDates'] },
+        { name: 'bullets', label: 'Description', type: 'bullets', placeholder: 'Awarded for best AI project...', fromKey: ['bullets', 'role', 'description'] }
       ]
     },
     {
@@ -151,4 +177,49 @@ export const mapItemToSectionData = (item: any, section: TemplateSection) => {
   });
 
   return data;
+};
+
+export const getFallbackRenderData = (activeContent: any, config: TemplateConfig | null): any => {
+  if (!activeContent) return {};
+  if (!config) return activeContent;
+
+  const result = { ...activeContent };
+
+  const extractSkillsFromProjects = (projects: any[], certifications: any[], awards: any[]): string => {
+    const skillsSet = new Set<string>();
+    const addTechList = (techStr?: string) => {
+      if (!techStr) return;
+      const parts = techStr.split(/[,;/]+/);
+      parts.forEach((p: string) => {
+        const cleaned = p.trim();
+        if (cleaned) skillsSet.add(cleaned);
+      });
+    };
+
+    if (Array.isArray(projects)) projects.forEach(p => addTechList(p.tech));
+    if (Array.isArray(certifications)) certifications.forEach(c => addTechList(c.tech));
+    if (Array.isArray(awards)) awards.forEach(a => addTechList(a.tech));
+
+    return Array.from(skillsSet).join(', ');
+  };
+
+  config.sections.forEach(sec => {
+    if (sec.id === 'profile') return;
+
+    const list = result[sec.id] || [];
+    if (list.length === 0) {
+      if (sec.id === 'skills') {
+        const calculatedItems = extractSkillsFromProjects(
+          result.projects || [],
+          result.certifications || [],
+          result.awards || []
+        );
+        if (calculatedItems) {
+          result.skills = [{ category: 'Technologies Used', items: calculatedItems }];
+        }
+      }
+    }
+  });
+
+  return result;
 };

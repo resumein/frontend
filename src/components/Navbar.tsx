@@ -101,22 +101,22 @@ export default function Navbar({ onSaveSuccess }: NavbarProps) {
         <a href="/" className="logo" style={{ textDecoration: 'none' }}>
           resume<span>in</span>
         </a>
-        
+
         {user && resumes.length > 0 && (
           <div className="resume-selector-container" ref={resumeDropdownRef}>
-            <button 
+            <button
               className="resume-selector-btn"
               onClick={() => setResumeDropdownOpen(!resumeDropdownOpen)}
               aria-expanded={resumeDropdownOpen}
               aria-haspopup="true"
             >
               <svg className="resume-selector-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
               </svg>
               <span className="resume-selector-name">{currentResume?.filename || 'Select Resume'}</span>
               <svg className={`resume-selector-arrow ${resumeDropdownOpen ? 'open' : ''}`} viewBox="0 0 24 24">
-                <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
 
@@ -125,7 +125,7 @@ export default function Navbar({ onSaveSuccess }: NavbarProps) {
                 <div className="dropdown-label">Select Resume</div>
                 <div className="resume-list-scrollable">
                   {resumes.map((resume) => (
-                    <button 
+                    <button
                       key={resume.id}
                       className={`resume-dropdown-item ${resume.id === selectedResumeId ? 'active' : ''}`}
                       onClick={() => {
@@ -134,20 +134,20 @@ export default function Navbar({ onSaveSuccess }: NavbarProps) {
                       }}
                     >
                       <svg className="resume-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <polyline points="14 2 14 8 20 8"/>
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
                       </svg>
                       <span className="resume-item-name">{resume.filename}</span>
                       {resume.id === selectedResumeId && (
                         <svg className="resume-item-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                          <polyline points="20 6 9 17 4 12"/>
+                          <polyline points="20 6 9 17 4 12" />
                         </svg>
                       )}
                     </button>
                   ))}
                 </div>
                 <hr className="dropdown-divider" />
-                <button 
+                <button
                   className="resume-dropdown-item create-new"
                   onClick={() => {
                     setIsCreatingResume(true);
@@ -168,12 +168,12 @@ export default function Navbar({ onSaveSuccess }: NavbarProps) {
 
       <div className="nav-links">
         {isDirty && (
-          <button 
-            onClick={handleSave} 
+          <button
+            onClick={handleSave}
             className="save-changes-btn"
             disabled={savingChanges}
           >
-            {savingChanges ? 'Saving...' : 'Save Changes'}
+            {savingChanges ? 'Publishing...' : 'Publish'}
           </button>
         )}
 

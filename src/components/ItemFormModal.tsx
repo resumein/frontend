@@ -55,6 +55,18 @@ export default function ItemFormModal({
                   />
                 </div>
                 <div className="form-group">
+                  <label className="form-label" htmlFor="location">Location *</label>
+                  <input 
+                    className="form-input" 
+                    type="text" 
+                    id="location" 
+                    name="location" 
+                    required 
+                    placeholder="e.g. Stanford, CA" 
+                    defaultValue={itemToEdit ? ((itemToEdit as EducationItem).location || '') : ''}
+                  />
+                </div>
+                <div className="form-group">
                   <label className="form-label" htmlFor="degree">Degree *</label>
                   <input 
                     className="form-input" 
@@ -107,6 +119,18 @@ export default function ItemFormModal({
                   />
                 </div>
                 <div className="form-group">
+                  <label className="form-label" htmlFor="technologiesUsed">Technologies Used *</label>
+                  <input 
+                    className="form-input" 
+                    type="text" 
+                    id="technologiesUsed" 
+                    name="technologiesUsed" 
+                    required 
+                    placeholder="e.g. Python, Flask, React" 
+                    defaultValue={itemToEdit ? ((itemToEdit as ProjectItem).technologiesUsed || '') : ''}
+                  />
+                </div>
+                <div className="form-group">
                   <label className="form-label" htmlFor="github">GitHub Repository URL *</label>
                   <input 
                     className="form-input" 
@@ -136,7 +160,7 @@ export default function ItemFormModal({
                     id="description" 
                     name="description" 
                     required 
-                    placeholder="Describe key features, technologies used, and your individual contribution..." 
+                    placeholder="Describe key features and your individual contribution..." 
                     defaultValue={itemToEdit ? (itemToEdit as ProjectItem).description : ''}
                   />
                 </div>
@@ -167,6 +191,18 @@ export default function ItemFormModal({
                     required 
                     placeholder="e.g. Google" 
                     defaultValue={itemToEdit ? (itemToEdit as ExperienceItem).company : ''}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="location">Location *</label>
+                  <input 
+                    className="form-input" 
+                    type="text" 
+                    id="location" 
+                    name="location" 
+                    required 
+                    placeholder="e.g. Mountain View, CA" 
+                    defaultValue={itemToEdit ? ((itemToEdit as ExperienceItem).location || '') : ''}
                   />
                 </div>
                 <div className="form-group">

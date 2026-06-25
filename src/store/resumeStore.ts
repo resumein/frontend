@@ -23,6 +23,7 @@ interface ResumeState {
   discardChanges: () => void;
   templateConfig: TemplateConfig | null;
   setTemplateConfig: (config: TemplateConfig | null) => void;
+  updateTemplateConfig: (config: TemplateConfig) => void;
   initializeActiveContentWithConfig: (config: TemplateConfig) => void;
 }
 
@@ -37,10 +38,29 @@ export const useResumeStore = create<ResumeState>((set, get) => ({
   templateConfig: null,
 
   setTemplateConfig: (templateConfig) => {
+    const current = get().templateConfig;
+    if (current && templateConfig && JSON.stringify(current) === JSON.stringify(templateConfig)) {
+      return;
+    }
+
     set({ templateConfig });
     if (templateConfig) {
+      const active = get().activeContent;
+      if (active && !active.templateConfig) {
+        const updated = { ...active, templateConfig };
+        set({ activeContent: updated, originalContent: updated });
+      }
       get().initializeActiveContentWithConfig(templateConfig);
     }
+  },
+
+  updateTemplateConfig: (newConfig) => {
+    const active = get().activeContent;
+    if (!active) return;
+    const updatedContent = { ...active, templateConfig: newConfig };
+    const original = get().originalContent;
+    const isDirty = JSON.stringify(updatedContent) !== JSON.stringify(original);
+    set({ templateConfig: newConfig, activeContent: updatedContent, isDirty });
   },
 
   initializeActiveContentWithConfig: (config) => {
@@ -108,12 +128,12 @@ export const useResumeStore = create<ResumeState>((set, get) => ({
   initializeActiveContent: () => {
     const { resumes, selectedResumeId } = get();
     if (!selectedResumeId) {
-      set({ activeContent: null, originalContent: null, isDirty: false });
+      set({ activeContent: null, originalContent: null, isDirty: false, templateConfig: null });
       return;
     }
     const currentResume = resumes.find(r => r.id === selectedResumeId);
     if (!currentResume) {
-      set({ activeContent: null, originalContent: null, isDirty: false });
+      set({ activeContent: null, originalContent: null, isDirty: false, templateConfig: null });
       return;
     }
 
@@ -131,10 +151,18 @@ export const useResumeStore = create<ResumeState>((set, get) => ({
       education: content.education || [],
       experience: content.experience || [],
       projects: content.projects || [],
-      skills: content.skills || []
+      skills: content.skills || [],
+      certifications: content.certifications || [],
+      awards: content.awards || [],
+      ...content
     };
 
-    set({ activeContent: defaultContent, originalContent: defaultContent, isDirty: false });
+    set({ 
+      activeContent: defaultContent, 
+      originalContent: defaultContent, 
+      isDirty: false,
+      templateConfig: content.templateConfig || null
+    });
   },
 
   saveActiveContent: (updatedResume) => {

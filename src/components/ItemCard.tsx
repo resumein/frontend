@@ -65,6 +65,7 @@ export default function ItemCard({ item, onEdit, onDelete, formatDate, isUsed = 
           <div className="item-card-title">{(item as EducationItem).school}</div>
           <div className="item-card-subtitle">
             {(item as EducationItem).degree} in {(item as EducationItem).field}
+            {(item as EducationItem).location && ` (${(item as EducationItem).location})`}
           </div>
           {(item as EducationItem).grade && (
             <span className="item-card-badge">Grade: {(item as EducationItem).grade}</span>
@@ -85,6 +86,11 @@ export default function ItemCard({ item, onEdit, onDelete, formatDate, isUsed = 
         <>
           <div className="item-card-title">{(item as ProjectItem).name}</div>
           <p className="item-card-description">{(item as ProjectItem).description}</p>
+          {(item as ProjectItem).technologiesUsed && (
+            <div className="item-card-badge" style={{ marginTop: '0.2rem', marginBottom: '0.4rem', display: 'inline-block' }}>
+              {(item as ProjectItem).technologiesUsed}
+            </div>
+          )}
           <div className="item-card-links">
             <a href={(item as ProjectItem).github} target="_blank" rel="noopener noreferrer" className="item-card-link">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -118,7 +124,10 @@ export default function ItemCard({ item, onEdit, onDelete, formatDate, isUsed = 
       {item.type === 'experience' && (
         <>
           <div className="item-card-title">{(item as ExperienceItem).title}</div>
-          <div className="item-card-subtitle">{(item as ExperienceItem).company}</div>
+          <div className="item-card-subtitle">
+            {(item as ExperienceItem).company}
+            {(item as ExperienceItem).location && ` (${(item as ExperienceItem).location})`}
+          </div>
           {(item as ExperienceItem).description && (
             <p className="item-card-description">{(item as ExperienceItem).description}</p>
           )}
