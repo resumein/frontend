@@ -141,7 +141,9 @@
         }
 
         @media print {
-            html, body {
+
+            html,
+            body {
                 margin: 0;
                 padding: 0;
                 width: 8.5in;
@@ -334,10 +336,6 @@
             // ---- Technical Skills ----
             skills: []
         };
-
-        /* ===================================================================
-           RENDERING LOGIC — no need to edit below this line
-           =================================================================== */
 
         function el(tag, opts = {}, children = []) {
             const e = document.createElement(tag);
@@ -541,11 +539,11 @@
 
         function render(data) {
             document.getElementById('header').innerHTML = '';
-            
+
             // Clear sections in templateConfig dynamically
             if (data.templateConfig && data.templateConfig.sections) {
                 const container = document.getElementById('page');
-                
+
                 // Hide any section element currently in DOM that is NOT in the current templateConfig
                 if (container) {
                     const allSections = Array.from(container.querySelectorAll('section'));
@@ -622,4 +620,5 @@
         render(resumeData);
     </script>
 </body>
+
 </html>

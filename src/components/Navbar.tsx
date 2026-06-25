@@ -77,7 +77,10 @@ export default function Navbar({ onSaveSuccess }: NavbarProps) {
   };
 
   const handlePrint = () => {
-    const iframe = document.querySelector('.preview-iframe') as HTMLIFrameElement;
+    const iframe = (
+      document.getElementById('resume-preview-iframe') ||
+      document.querySelector('.preview-iframe')
+    ) as HTMLIFrameElement | null;
     if (iframe && iframe.contentWindow) {
       iframe.contentWindow.focus();
       iframe.contentWindow.print();

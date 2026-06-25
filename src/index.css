@@ -654,16 +654,19 @@ body {
 .preview-canvas-container {
   flex: 1;
   overflow: auto;
-  padding: 2.5rem 1.5rem;
+  padding: 0 1.5rem;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  justify-content: flex-start;
   align-items: flex-start;
   background-color: #E5E7EB;
-  position: relative; /* Setup coordinate space for floating controls */
+  --preview-canvas-bg: #E5E7EB;
+  position: relative;
 }
 
 .dark .preview-canvas-container {
   background-color: #111827;
+  --preview-canvas-bg: #111827;
 }
 
 
