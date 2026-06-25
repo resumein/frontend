@@ -236,7 +236,8 @@ export default function ResumePreview({ onSectionClick, activeSection }: ResumeP
     const base = tc.sections.map((s) => s.selector).join(', ');
     style.innerHTML = `
       #page { height: auto !important; min-height: ${PAGE_H_IN}in !important; overflow: visible !important; padding: 0.5in 0.6in !important; box-sizing: border-box !important; }
-      html, body { overflow: visible !important; height: auto !important; }
+      /* Lock html+body to 816px so template never reflows to mobile layout on narrow devices */
+      html, body { overflow: visible !important; height: auto !important; width: 816px !important; min-width: 816px !important; }
       ${hover} { outline: 2px dashed rgba(249,115,22,0.7) !important; outline-offset: 4px !important; border-radius: 4px !important; cursor: pointer !important; transition: outline-color 0.2s ease; }
       ${base} { transition: all 0.2s ease; }
       .section-drag-highlight { outline: 2.5px dashed #e36414 !important; outline-offset: 4px !important; border-radius: 4px !important; background-color: rgba(227,100,20,0.05) !important; }
@@ -294,6 +295,17 @@ export default function ResumePreview({ onSectionClick, activeSection }: ResumeP
       iframeReadyRef.current = false;
       lastResumeIdRef.current = selectedResumeId;
       doc.open(); doc.write(htmlContent); doc.close();
+
+      // Force the iframe to always render at 816px (8.5in desktop width) regardless of device.
+      // The outer React component scales it via CSS transform, so content is always desktop-layout.
+      const existingVp = doc.querySelector('meta[name="viewport"]');
+      if (existingVp) existingVp.setAttribute('content', 'width=816');
+      else {
+        const vp = doc.createElement('meta');
+        vp.name = 'viewport';
+        vp.content = 'width=816';
+        doc.head.appendChild(vp);
+      }
 
       const setup = () => {
         iframeReadyRef.current = true;
