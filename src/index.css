@@ -666,9 +666,7 @@ body {
   background-color: #111827;
 }
 
-.dashboard-main.panel-expanded .preview-canvas-container {
-  margin-right: 14px;
-}
+
 
 .preview-floating-zoom {
   position: absolute;
@@ -1688,57 +1686,7 @@ select.form-input {
   animation: panelContentFadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Absolute Circular Toggle Collapse/Expand Button */
-.panel-toggle-btn {
-  position: absolute;
-  top: 50%;
-  left: -13px; /* Hang half off the left border */
-  transform: translateY(-50%);
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  border: 1px solid var(--border-color);
-  background-color: var(--bg-secondary);
-  color: var(--text-secondary);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 8px var(--shadow-color);
-  z-index: 100;
-  outline: none;
-  opacity: 0;
-  pointer-events: none;
-  transition: background-color 0.2s ease, 
-              color 0.2s ease, 
-              transform 0.2s ease, 
-              box-shadow 0.2s ease,
-              opacity 0.2s ease,
-              border-color var(--transition-speed) ease;
-}
 
-.resume-editor-panel.expanded .panel-toggle-btn {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.panel-toggle-btn:hover {
-  color: var(--color-brand-terracotta);
-  background-color: var(--bg-primary);
-  box-shadow: 0 4px 12px var(--shadow-color);
-}
-
-.panel-toggle-btn:active {
-  transform: translateY(-50%) scale(0.95);
-}
-
-.panel-toggle-btn svg {
-  width: 14px;
-  height: 14px;
-  stroke-width: 2.5;
-  fill: none;
-  stroke: currentColor;
-}
 
 .panel-header {
   padding: 1.25rem 1.5rem;
@@ -2133,8 +2081,8 @@ select.form-input {
 
 /* Sleek Modern Scrollbars */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 12px;
+  height: 12px;
 }
 
 ::-webkit-scrollbar-track {
@@ -2142,26 +2090,26 @@ select.form-input {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.35);
+  background: rgba(156, 163, 175, 0.45);
   border-radius: 9999px;
-  border: 2px solid transparent;
+  border: 3px solid transparent;
   background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(156, 163, 175, 0.55);
-  border: 2px solid transparent;
+  background: rgba(156, 163, 175, 0.65);
+  border: 3px solid transparent;
   background-clip: padding-box;
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.25);
-  border: 2px solid transparent;
+  background: rgba(148, 163, 184, 0.35);
+  border: 3px solid transparent;
   background-clip: padding-box;
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.45);
-  border: 2px solid transparent;
+  background: rgba(148, 163, 184, 0.55);
+  border: 3px solid transparent;
   background-clip: padding-box;
 }

@@ -4,9 +4,10 @@ import { parseTemplateConfig, mapItemToSectionData, DEFAULT_TEMPLATE_CONFIG, get
 
 interface ResumePreviewProps {
   onSectionClick: (section: string) => void;
+  activeSection: string | null;
 }
 
-export default function ResumePreview({ onSectionClick }: ResumePreviewProps) {
+export default function ResumePreview({ onSectionClick, activeSection }: ResumePreviewProps) {
   const resumes = useResumeStore((state) => state.resumes);
   const selectedResumeId = useResumeStore((state) => state.selectedResumeId);
   const activeContent = useResumeStore((state) => state.activeContent);
@@ -223,9 +224,26 @@ export default function ResumePreview({ onSectionClick }: ResumePreviewProps) {
             border-radius: 4px !important;
             background-color: rgba(227, 100, 20, 0.05) !important;
           }
+          .section-selected-highlight {
+            outline: 2.5px solid #e36414 !important;
+            outline-offset: 4px !important;
+            border-radius: 4px !important;
+            background-color: rgba(227, 100, 20, 0.03) !important;
+          }
           a {
             pointer-events: none !important;
             cursor: default !important;
+          }
+          @media print {
+            .section-selected-highlight,
+            .section-drag-highlight,
+            ${baseSelectors},
+            ${hoverSelectors} {
+              outline: none !important;
+              outline-offset: 0 !important;
+              background-color: transparent !important;
+              box-shadow: none !important;
+            }
           }
         `;
         doc.head.appendChild(style);
@@ -311,6 +329,33 @@ export default function ResumePreview({ onSectionClick }: ResumePreviewProps) {
     updateIframeContent();
   }, [htmlContent, selectedResumeId, activeContent, templateConfig]);
 
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc || !templateConfig) return;
+
+    // Remove selected class from all sections
+    templateConfig.sections.forEach((sec) => {
+      const el = doc.querySelector(sec.selector);
+      if (el) {
+        el.classList.remove('section-selected-highlight');
+      }
+    });
+
+    // Add selected class to the active section if it matches a template section
+    if (activeSection) {
+      const activeSecConfig = templateConfig.sections.find(s => s.id === activeSection);
+      if (activeSecConfig) {
+        const el = doc.querySelector(activeSecConfig.selector);
+        if (el) {
+          el.classList.add('section-selected-highlight');
+          el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }
+    }
+  }, [activeSection, templateConfig, htmlContent]);
+
   const handleZoomIn = () => {
     setZoom((prev) => Math.min(prev + 0.1, 1.5));
   };
@@ -393,9 +438,9 @@ export default function ResumePreview({ onSectionClick }: ResumePreviewProps) {
               gap: '0.35rem',
               fontSize: '0.75rem',
               fontWeight: 700,
-              backgroundColor: 'transparent',
+              backgroundColor: activeSection === 'details' ? 'rgba(227, 100, 20, 0.08)' : 'transparent',
               color: 'var(--text-primary)',
-              border: 'none',
+              border: activeSection === 'details' ? '1.5px solid var(--color-brand-terracotta)' : '1.5px solid transparent',
               cursor: 'pointer',
               height: '2rem'
             }}
@@ -406,9 +451,9 @@ export default function ResumePreview({ onSectionClick }: ResumePreviewProps) {
             </svg>
             Edit
           </button>
-
+ 
           <span style={{ width: '1px', height: '1rem', backgroundColor: 'var(--border-color)', margin: '0 0.2rem' }}></span>
-
+ 
           <button
             onClick={() => onSectionClick('layout')}
             className="zoom-btn"
@@ -423,9 +468,9 @@ export default function ResumePreview({ onSectionClick }: ResumePreviewProps) {
               gap: '0.35rem',
               fontSize: '0.75rem',
               fontWeight: 700,
-              backgroundColor: 'transparent',
+              backgroundColor: activeSection === 'layout' ? 'rgba(227, 100, 20, 0.08)' : 'transparent',
               color: 'var(--text-primary)',
-              border: 'none',
+              border: activeSection === 'layout' ? '1.5px solid var(--color-brand-terracotta)' : '1.5px solid transparent',
               cursor: 'pointer',
               height: '2rem'
             }}

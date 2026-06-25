@@ -511,7 +511,10 @@ export default function DashboardPage() {
 
         {/* Rightmost: Main Workspace (Canvas area) */}
         <main className={`dashboard-main ${activeEditSection ? 'panel-expanded' : ''}`}>
-          <ResumePreview onSectionClick={(section) => setActiveEditSection(section)} />
+          <ResumePreview 
+            onSectionClick={(section) => setActiveEditSection(section)} 
+            activeSection={activeEditSection}
+          />
         </main>
 
         <ResumeEditorPanel 

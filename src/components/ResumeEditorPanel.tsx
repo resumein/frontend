@@ -45,7 +45,7 @@ export default function ResumeEditorPanel({ section, onClose }: ResumeEditorPane
       setEditFilename(currentResume.filename || '');
       setEditJobDescription(currentResume.jobDescription || '');
     }
-  }, [section, selectedResumeId, currentResume]);
+  }, [section, selectedResumeId, currentResume?.filename, currentResume?.jobDescription]);
 
   const handleSaveDetails = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,10 +142,9 @@ export default function ResumeEditorPanel({ section, onClose }: ResumeEditorPane
     }
   };
 
-  if (!activeContent || !section || !templateConfig) return null;
+  if (!activeContent || !templateConfig) return null;
 
-  const sectionConfig = templateConfig.sections.find(s => s.id === section);
-  if (!sectionConfig && section !== 'layout' && section !== 'details') return null;
+  const sectionConfig = section ? templateConfig.sections.find(s => s.id === section) : undefined;
 
   const getSectionTitle = () => {
     if (section === 'layout') return 'Manage Layout';
@@ -296,26 +295,43 @@ export default function ResumeEditorPanel({ section, onClose }: ResumeEditorPane
   };
 
   return (
-    <div className={`resume-editor-panel expanded`}>
-      <button
-        className="panel-toggle-btn"
-        onClick={onClose}
-        title="Collapse editor"
-        aria-label="Collapse editor"
-      >
-        <svg viewBox="0 0 24 24">
-          <polyline points="9 18 15 12 9 6"></polyline>
-        </svg>
-      </button>
-      <div className="panel-inner-wrapper">
+    <div className={`resume-editor-panel ${section ? 'expanded' : ''}`}>
+
+      {section && (
+        <div className="panel-inner-wrapper">
         <div className="panel-header">
           <h3>{getSectionTitle()}</h3>
-          <button onClick={onClose} className="panel-close-btn" title="Close Panel">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {section === 'details' && (
+              <button 
+                onClick={handleDeleteResume} 
+                disabled={deletingResume}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#ef4444',
+                  cursor: 'pointer',
+                  padding: '0.25rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  transition: 'opacity 0.2s',
+                  marginRight: '0.25rem'
+                }}
+                title="Delete Resume File"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ width: '1.2rem', height: '1.2rem' }}>
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </button>
+            )}
+            <button onClick={onClose} className="panel-close-btn" title="Close Panel">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div
@@ -554,35 +570,6 @@ export default function ResumeEditorPanel({ section, onClose }: ResumeEditorPane
                   {savingDetails ? 'Saving...' : 'Save Changes'}
                 </button>
               </form>
-
-              <div style={{ marginTop: '3rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-color)' }}>
-                <button
-                  onClick={handleDeleteResume}
-                  disabled={deletingResume}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    backgroundColor: 'rgba(239, 68, 68, 0.08)',
-                    color: '#ef4444',
-                    border: '1.5px solid rgba(239, 68, 68, 0.15)',
-                    padding: '0.75rem 1.25rem',
-                    borderRadius: '8px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    fontSize: '0.85rem',
-                    transition: 'all 0.2s ease',
-                    width: '100%',
-                    justifyContent: 'center'
-                  }}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ width: '1rem', height: '1rem' }}>
-                    <polyline points="3 6 5 6 21 6"></polyline>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                  </svg>
-                  {deletingResume ? 'Deleting...' : 'Delete Resume File'}
-                </button>
-              </div>
             </div>
           ) : sectionConfig ? (
             /* Section Fields Editor View */
@@ -782,6 +769,7 @@ export default function ResumeEditorPanel({ section, onClose }: ResumeEditorPane
           ) : null}
         </div>
       </div>
+      )}
     </div>
   );
 }
