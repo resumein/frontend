@@ -180,46 +180,5 @@ export const mapItemToSectionData = (item: any, section: TemplateSection) => {
 };
 
 export const getFallbackRenderData = (activeContent: any, config: TemplateConfig | null): any => {
-  if (!activeContent) return {};
-  if (!config) return activeContent;
-
-  const result = { ...activeContent };
-
-  const extractSkillsFromProjects = (projects: any[], certifications: any[], awards: any[]): string => {
-    const skillsSet = new Set<string>();
-    const addTechList = (techStr?: string) => {
-      if (!techStr) return;
-      const parts = techStr.split(/[,;/]+/);
-      parts.forEach((p: string) => {
-        const cleaned = p.trim();
-        if (cleaned) skillsSet.add(cleaned);
-      });
-    };
-
-    if (Array.isArray(projects)) projects.forEach(p => addTechList(p.tech));
-    if (Array.isArray(certifications)) certifications.forEach(c => addTechList(c.tech));
-    if (Array.isArray(awards)) awards.forEach(a => addTechList(a.tech));
-
-    return Array.from(skillsSet).join(', ');
-  };
-
-  config.sections.forEach(sec => {
-    if (sec.id === 'profile') return;
-
-    const list = result[sec.id] || [];
-    if (list.length === 0) {
-      if (sec.id === 'skills') {
-        const calculatedItems = extractSkillsFromProjects(
-          result.projects || [],
-          result.certifications || [],
-          result.awards || []
-        );
-        if (calculatedItems) {
-          result.skills = [{ category: 'Technologies Used', items: calculatedItems }];
-        }
-      }
-    }
-  });
-
-  return result;
+  return activeContent || {};
 };

@@ -101,7 +101,25 @@ export const useResumeStore = create<ResumeState>((set, get) => ({
         });
       } else {
         if (defaultContent[section.id] === undefined) {
-          defaultContent[section.id] = [];
+          if (section.id === 'skills') {
+            const projectsList = defaultContent.projects || [];
+            const skillsSet = new Set<string>();
+            if (Array.isArray(projectsList)) {
+              projectsList.forEach((p: any) => {
+                const techStr = p.tech || p.technologiesUsed || '';
+                if (techStr) {
+                  techStr.split(/[,;/]+/).forEach((part: string) => {
+                    const cleaned = part.trim();
+                    if (cleaned) skillsSet.add(cleaned);
+                  });
+                }
+              });
+            }
+            const extracted = Array.from(skillsSet).join(', ');
+            defaultContent.skills = extracted ? [{ category: 'Technologies Used', items: extracted }] : [];
+          } else {
+            defaultContent[section.id] = [];
+          }
         }
       }
     });
@@ -144,6 +162,23 @@ export const useResumeStore = create<ResumeState>((set, get) => ({
     const user = useUserStore.getState().user;
     const content = currentResume.content || {};
 
+    const projectsList = content.projects || [];
+    const extractedSkills = (() => {
+      const skillsSet = new Set<string>();
+      if (Array.isArray(projectsList)) {
+        projectsList.forEach((p: any) => {
+          const techStr = p.tech || p.technologiesUsed || '';
+          if (techStr) {
+            techStr.split(/[,;/]+/).forEach((part: string) => {
+              const cleaned = part.trim();
+              if (cleaned) skillsSet.add(cleaned);
+            });
+          }
+        });
+      }
+      return Array.from(skillsSet).join(', ');
+    })();
+
     const defaultContent = {
       name: content.name || user?.name || 'Example Name',
       phone: content.phone || '+91 12345 67890',
@@ -155,7 +190,7 @@ export const useResumeStore = create<ResumeState>((set, get) => ({
       education: content.education || [],
       experience: content.experience || [],
       projects: content.projects || [],
-      skills: content.skills || [],
+      skills: content.skills !== undefined ? content.skills : (extractedSkills ? [{ category: 'Technologies Used', items: extractedSkills }] : []),
       certifications: content.certifications || [],
       awards: content.awards || [],
       ...content
