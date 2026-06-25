@@ -48,18 +48,18 @@ export const getErrorMessage = (error: any, defaultMsg: string): string => {
     return defaultMsg;
 };
 
-export const getWithToken = async (url: string) => {
-    return await API.get(url);
+export const getWithToken = async <T = any>(url: string) => {
+    return await API.get<T>(url);
 };
 
-export const postWithToken = async (url: string, data: any) => {
-    return await API.post(url, data);
+export const postWithToken = async <T = any>(url: string, data: any) => {
+    return await API.post<T>(url, data);
 };
 
-export const deleteWithToken = async (url: string, config?: any) => {
-    return await API.delete(url, config);
+export const deleteWithToken = async <T = any>(url: string, config?: any) => {
+    return await API.delete<T>(url, config);
 };
 
-export const putWithToken = async (url: string, data: any) => {
-    return await API.put(url, data);
+export const putWithToken = async <T = any>(url: string, data: any) => {
+    return await API.put<T>(url, data);
 };

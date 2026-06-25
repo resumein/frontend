@@ -16,6 +16,7 @@ import { getErrorMessage } from '../lib/network';
 import ResumePreview from '../components/ResumePreview';
 import ResumeEditorPanel from '../components/ResumeEditorPanel';
 import { mapItemToSectionData } from '../lib/templateUtils';
+import ImportModal from '../components/ImportModal';
 
 export default function DashboardPage() {
   const user = useUserStore((state) => state.user);
@@ -41,6 +42,8 @@ export default function DashboardPage() {
   const setLoadingResumes = useResumeStore((state) => state.setLoading);
   const isCreatingResume = useResumeStore((state) => state.isCreatingResume);
   const setIsCreatingResume = useResumeStore((state) => state.setIsCreatingResume);
+  const isImportModalOpen = useResumeStore((state) => state.isImportModalOpen);
+  const setIsImportModalOpen = useResumeStore((state) => state.setIsImportModalOpen);
   const isDirty = useResumeStore((state) => state.isDirty);
   const activeContent = useResumeStore((state) => state.activeContent);
   const templateConfig = useResumeStore((state) => state.templateConfig);
@@ -554,6 +557,23 @@ export default function DashboardPage() {
         onSubmit={handleCreateResumeSubmit}
         loader={creatingResumeLoader}
         hasResumes={resumes.length > 0}
+      />
+
+      {/* Import Resume Modal Overlay Dialog */}
+      <ImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImportComplete={() => {
+          itemService.getItems()
+            .then(itemsData => {
+              setItems(itemsData);
+              showToast('Successfully imported resume items!', 'success');
+            })
+            .catch(err => {
+              console.error(err);
+              showToast('Failed to refresh items list', 'error');
+            });
+        }}
       />
 
       {/* Toast Notifications container */}

@@ -8,6 +8,7 @@ interface ResumeState {
   selectedResumeId: string | null;
   loading: boolean;
   isCreatingResume: boolean;
+  isImportModalOpen: boolean;
   activeContent: any | null;
   originalContent: any | null;
   isDirty: boolean;
@@ -17,6 +18,7 @@ interface ResumeState {
   removeResume: (id: string) => void;
   setLoading: (loading: boolean) => void;
   setIsCreatingResume: (isCreatingResume: boolean) => void;
+  setIsImportModalOpen: (isImportModalOpen: boolean) => void;
   setActiveContent: (content: any) => void;
   initializeActiveContent: () => void;
   saveActiveContent: (updatedResume: Resume) => void;
@@ -32,6 +34,8 @@ export const useResumeStore = create<ResumeState>((set, get) => ({
   selectedResumeId: null,
   loading: false,
   isCreatingResume: false,
+  isImportModalOpen: false,
+  setIsImportModalOpen: (isImportModalOpen) => set({ isImportModalOpen }),
   activeContent: null,
   originalContent: null,
   isDirty: false,

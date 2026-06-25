@@ -125,6 +125,21 @@ export const itemService = {
   updateItem: async (id: string, item: Omit<ResumeItem, 'id' | 'username' | 'createdAt' | 'updatedAt'>): Promise<ResumeItem> => {
     const response = await putWithToken(`/api/item/${id}`, item);
     return response.data;
+  },
+
+  /**
+   * Bulk inserts multiple resume items.
+   */
+  bulkInsertItems: async (items: Omit<ResumeItem, 'id' | 'username' | 'createdAt' | 'updatedAt'>[]): Promise<ResumeItem[]> => {
+    const response = await postWithToken('/api/item/bulk', items);
+    return response.data;
+  }
+};
+
+export const aiService = {
+  scanResume: async (resumeContent: string): Promise<{ items: ResumeItem[] }> => {
+    const response = await postWithToken<{ items: ResumeItem[] }>('/api/resumescan', { resumeContent });
+    return response.data;
   }
 };
 
