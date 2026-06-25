@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useResumeStore } from '../store/resumeStore';
 import { mapItemToSectionData, DEFAULT_TEMPLATE_CONFIG } from '../lib/templateUtils';
 import { resumeService } from '../lib/api';
+import { getErrorMessage } from '../lib/network';
 
 export const mapItemToResumeSchema = (item: any) => {
   const section = DEFAULT_TEMPLATE_CONFIG.sections.find(s => 
@@ -63,7 +64,7 @@ export default function ResumeEditorPanel({ section, onClose }: ResumeEditorPane
       alert('Resume details saved successfully!');
     } catch (err) {
       console.error('Failed to save resume details:', err);
-      alert('Failed to save resume details.');
+      alert(getErrorMessage(err, 'Failed to save resume details'));
     } finally {
       setSavingDetails(false);
     }
@@ -88,7 +89,7 @@ export default function ResumeEditorPanel({ section, onClose }: ResumeEditorPane
       onClose();
     } catch (err) {
       console.error('Failed to delete resume:', err);
-      alert('Failed to delete resume.');
+      alert(getErrorMessage(err, 'Failed to delete resume'));
     } finally {
       setDeletingResume(false);
     }

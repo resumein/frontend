@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useUserStore } from '../store/userStore';
 import { useResumeStore } from '../store/resumeStore';
 import { resumeService } from '../lib/api';
+import { getErrorMessage } from '../lib/network';
 
 interface NavbarProps {
   onSaveSuccess?: () => void;
@@ -101,6 +102,7 @@ export default function Navbar({ onSaveSuccess }: NavbarProps) {
       }
     } catch (err) {
       console.error('Failed to save resume content:', err);
+      alert(getErrorMessage(err, 'Failed to save resume content'));
     } finally {
       setSavingChanges(false);
     }

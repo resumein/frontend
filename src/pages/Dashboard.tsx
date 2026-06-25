@@ -12,6 +12,7 @@ import ToastContainer from '../components/ToastContainer';
 import type { Toast } from '../components/ToastContainer';
 import { itemService, resumeService } from '../lib/api';
 import type { ResumeItem } from '../lib/api';
+import { getErrorMessage } from '../lib/network';
 import ResumePreview from '../components/ResumePreview';
 import ResumeEditorPanel from '../components/ResumeEditorPanel';
 import { mapItemToSectionData } from '../lib/templateUtils';
@@ -143,7 +144,7 @@ export default function DashboardPage() {
         })
         .catch((err) => {
           console.error("Failed to load initial user data:", err);
-          showToast("Failed to load dashboard data.", "error");
+          showToast(getErrorMessage(err, "Failed to load dashboard data"), "error");
         })
         .finally(() => {
           setLoadingItems(false);
@@ -181,6 +182,9 @@ export default function DashboardPage() {
     function handleClickOutside(event: MouseEvent) {
       if (activeEditSection) {
         const target = event.target as HTMLElement;
+        if (target.closest('.preview-floating-zoom')) {
+          return;
+        }
         if (target.closest('.preview-canvas-container') || target.closest('.dashboard-main')) {
           setActiveEditSection(null);
         }
@@ -380,7 +384,7 @@ export default function DashboardPage() {
       form.reset();
     } catch (err) {
       console.error("Failed to save item:", err);
-      showToast('Failed to save item. Please verify all entries.', 'error');
+      showToast(getErrorMessage(err, 'Failed to save item'), 'error');
     } finally {
       setSubmitting(false);
     }
@@ -397,7 +401,7 @@ export default function DashboardPage() {
       showToast('Item deleted successfully.', 'success');
     } catch (err) {
       console.error("Failed to delete item:", err);
-      showToast('Failed to delete item. Please try again.', 'error');
+      showToast(getErrorMessage(err, 'Failed to delete item'), 'error');
     } finally {
       setDeleting(false);
     }
@@ -421,7 +425,7 @@ export default function DashboardPage() {
       form.reset();
     } catch (err) {
       console.error("Failed to create resume:", err);
-      showToast("Failed to create resume. Please try again.", "error");
+      showToast(getErrorMessage(err, "Failed to create resume"), "error");
     } finally {
       setCreatingResumeLoader(false);
     }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { authService } from '../lib/api';
 import { useUserStore } from '../store/userStore';
+import { getErrorMessage } from '../lib/network';
 import Navbar from '../components/Navbar';
 
 export default function AuthCallbackPage() {
@@ -30,7 +31,7 @@ export default function AuthCallbackPage() {
       })
       .catch((error) => {
         console.error("Auth error:", error);
-        setStatus("Failed to communicate with the server.");
+        setStatus(getErrorMessage(error, "Failed to authenticate with GitHub"));
       });
   }, [searchParams, navigate, setAuth]);
 

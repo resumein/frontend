@@ -274,6 +274,19 @@ export default function ResumePreview({ onSectionClick, activeSection }: ResumeP
       const setupListeners = () => {
         iframeLoadedRef.current = true;
 
+        // Forward Keydown (like Escape) to parent window
+        doc.addEventListener('keydown', (e: KeyboardEvent) => {
+          if (e.key === 'Escape') {
+            const evt = new KeyboardEvent('keydown', {
+              key: e.key,
+              code: e.code,
+              bubbles: true,
+              cancelable: true
+            });
+            window.dispatchEvent(evt);
+          }
+        });
+
         // Drag and drop event listeners inside the iframe document
         doc.body.addEventListener('dragenter', (e: DragEvent) => {
           e.preventDefault();

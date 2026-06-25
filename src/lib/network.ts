@@ -21,6 +21,33 @@ API.interceptors.request.use((config) => {// Update global state AND save to bro
     return config;
 });
 
+API.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response && error.response.status === 401) {
+            useUserStore.getState().clearAuth();
+            window.location.href = '/';
+        }
+        return Promise.reject(error);
+    }
+);
+
+export const getErrorMessage = (error: any, defaultMsg: string): string => {
+    if (error.response) {
+        const status = error.response.status;
+        const data = error.response.data;
+        const serverMessage = data?.message || data?.error || (typeof data === 'string' ? data : null) || error.response.statusText;
+        if (serverMessage) {
+            return `${defaultMsg} (${serverMessage} - HTTP ${status})`;
+        }
+        return `${defaultMsg} (HTTP ${status})`;
+    }
+    if (error.message) {
+        return `${defaultMsg} (${error.message})`;
+    }
+    return defaultMsg;
+};
+
 export const getWithToken = async (url: string) => {
     return await API.get(url);
 };
